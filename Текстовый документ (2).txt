@@ -1,0 +1,5284 @@
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
+local Workspace = game:GetService("Workspace")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+local mouse = player:GetMouse()
+local camera = Workspace.CurrentCamera
+
+local THEMES = {
+	["Default Accent"] = Color3.fromRGB(255, 42, 92),
+	["Crimson Red"] = Color3.fromRGB(220, 20, 60),
+	["Neon Pink"] = Color3.fromRGB(255, 20, 147),
+	["Purple Dusk"] = Color3.fromRGB(138, 43, 226),
+	["Violet Glow"] = Color3.fromRGB(147, 112, 219),
+	["Deep Royal"] = Color3.fromRGB(65, 105, 225),
+	["Cyan Ice"] = Color3.fromRGB(0, 206, 209),
+	["Ocean Teal"] = Color3.fromRGB(0, 128, 128),
+	["Emerald Green"] = Color3.fromRGB(46, 204, 113),
+	["Lime Spark"] = Color3.fromRGB(50, 205, 50),
+	["Toxic Mint"] = Color3.fromRGB(0, 255, 127),
+	["Gold Glow"] = Color3.fromRGB(255, 215, 0),
+	["Amber Gold"] = Color3.fromRGB(255, 191, 0),
+	["Orange Blaze"] = Color3.fromRGB(255, 127, 80),
+	["Deep Coral"] = Color3.fromRGB(235, 87, 87),
+	["Pure White"] = Color3.fromRGB(240, 240, 240),
+	["Silver Mist"] = Color3.fromRGB(192, 192, 192),
+	["Steel Gray"] = Color3.fromRGB(112, 128, 144),
+	["Lavender"] = Color3.fromRGB(180, 130, 235),
+	["Sunset Red"] = Color3.fromRGB(255, 69, 0)
+}
+
+local COLORS = {
+	Background = Color3.fromRGB(7, 8, 12),
+	Panel = Color3.fromRGB(12, 13, 19),
+	Panel2 = Color3.fromRGB(16, 17, 24),
+	PanelHover = Color3.fromRGB(22, 23, 32),
+	Accent = THEMES["Default Accent"],
+	Text = Color3.fromRGB(245, 245, 250),
+	SubText = Color3.fromRGB(135, 137, 148),
+	Muted = Color3.fromRGB(75, 77, 89),
+	Border = Color3.fromRGB(45, 47, 58),
+	Danger = Color3.fromRGB(180, 30, 40),
+	DangerHover = Color3.fromRGB(220, 20, 30),
+}
+
+local MENU_SIZE = UDim2.fromOffset(760, 500)
+local CLOSED_SIZE = UDim2.fromOffset(690, 450)
+local SETTINGS_SIZE = UDim2.fromOffset(460, 560)
+
+local State = {
+	opened = false,
+	animating = false,
+	settingsOpen = false,
+	themesOpen = false,
+	bindSettingsOpen = false,
+	cursorBindSettingsOpen = false,
+	noclipBindSettingsOpen = false,
+	espSidePanelOpen = false,
+	bhopBindSettingsOpen = false,
+	skySettingsOpen = false,
+	stretchSettingsOpen = false,
+	waitingForKey = false,
+	waitingForTriggerKey = false,
+	waitingForEspKey = false,
+	waitingForCursorKey = false,
+	waitingForNoclipKey = false,
+	waitingForSpinbotKey = false,
+	waitingForBhopKey = false,
+	waitingForSkyKey = false,
+	waitingForStretchKey = false,
+	waitingForCameraTurnKey = false,
+	keybindsOverlayVisible = false,
+	selectedButton = nil,
+	rainbowCursorEnabled = false,
+	cameraTurnEnabled = false,
+	configNamePopupOpen = false,
+	configListPopupOpen = false,
+}
+
+local Keys = {
+	openKey = Enum.KeyCode.LeftShift,
+	triggerKey = Enum.KeyCode.Unknown,
+	triggerKey2 = Enum.KeyCode.Unknown,
+	espKey = Enum.KeyCode.Unknown,
+	unlockCursorKey = Enum.KeyCode.Unknown,
+	noclipKey = Enum.KeyCode.N,
+	spinbotKey = Enum.KeyCode.Unknown,
+	bhopKey = Enum.KeyCode.Unknown,
+	skyKey = Enum.KeyCode.Unknown,
+	stretchKey = Enum.KeyCode.Unknown,
+	cameraTurnKey = Enum.KeyCode.Unknown,
+}
+
+local KEY_TYPES = {
+	["Keyboard"] = "Keyboard",
+	["MouseButton1"] = "MouseButton1",
+	["MouseButton2"] = "MouseButton2",
+	["MouseWheel"] = "MouseWheel",
+	["MouseButton4"] = "MouseButton4",
+	["MouseButton5"] = "MouseButton5",
+}
+
+local Features = {
+	triggerbotEnabled = false,
+	triggerTargetPart = "All",
+	triggerMode = "Normal",
+	cursorUnlocked = false,
+	noclipEnabled = false,
+	espEnabled = false,
+	spinbotEnabled = false,
+	spinbotSpeed = 10,
+	bhopEnabled = false,
+	bhopMode = "NORMAL",
+	bhopSpeed = 120,
+	skyEnabled = false,
+	skyMode = "Rainbow",
+	stretchEnabled = false,
+	antiFlingEnabled = false,
+	antiAFKEnabled = false,
+	openOnLoad = false,
+	rainbowCursorEnabled = false,
+	cameraTurnEnabled = false,
+	configNamePopupOpen = false,
+	configListPopupOpen = false,
+}
+
+local espSettings = {
+	Chams = true,
+	Boxes = true,
+	Tracers = true,
+	Skeleton = true,
+	LookVector = true,
+	HealthBar = true,
+	ShowDistance = true,
+	PastDistance4s = true,
+	ShowName = true,
+	ShowHeldTool = true,
+	OffscreenArrow = true,
+}
+
+local pages = {}
+local particleObjects = {}
+local themeObjects = {}
+local espDrawings = {}
+local antiFlingConnections = {}
+local antiAFKConnection = nil
+local skyConnection = nil
+local skyAtmosphere = nil
+local stretchConnection = nil
+local canTp = true
+local rainbowCursor = nil
+local rainbowCursorGui = nil
+local rainbowHue = 0
+local currentThemeName = "Default Accent"
+
+--// =========================================================
+--// CLEAN OLD UI
+--// =========================================================
+
+local old = playerGui:FindFirstChild("AteotHub")
+if old then
+	old:Destroy()
+end
+
+--// =========================================================
+--// HELPERS
+--// =========================================================
+
+function New(className, properties)
+	local object = Instance.new(className)
+	for property, value in pairs(properties) do
+		object[property] = value
+	end
+	return object
+end
+
+function Corner(object, radius)
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, radius)
+	corner.Parent = object
+	return corner
+end
+
+function Stroke(object, color, transparency, thickness)
+	local stroke = Instance.new("UIStroke")
+	stroke.Color = color
+	stroke.Transparency = transparency or 0
+	stroke.Thickness = thickness or 1
+	stroke.Parent = object
+	return stroke
+end
+
+function Tween(object, duration, properties, style, direction)
+	local info = TweenInfo.new(
+		duration,
+		style or Enum.EasingStyle.Quint,
+		direction or Enum.EasingDirection.Out
+	)
+	local tween = TweenService:Create(object, info, properties)
+	tween:Play()
+	return tween
+end
+
+function keyName(key)
+	if not key or key == Enum.KeyCode.Unknown then return "None" end
+	local name = key.Name
+	name = name:gsub("^Left", "L ")
+	name = name:gsub("^Right", "R ")
+	return name
+end
+
+function inputTypeName(inputType)
+	if not inputType then return "None" end
+	if inputType == Enum.UserInputType.MouseButton1 then return "LMB"
+	elseif inputType == Enum.UserInputType.MouseButton2 then return "RMB"
+	elseif inputType == Enum.UserInputType.MouseWheel then return "Wheel"
+	elseif inputType == Enum.UserInputType.MouseButton4 then return "MB4"
+	elseif inputType == Enum.UserInputType.MouseButton5 then return "MB5"
+	elseif inputType == Enum.UserInputType.Keyboard then return "Keyboard"
+	else return "Unknown" end
+end
+
+function safeDestroy(object)
+	if object and object.Parent then
+		object:Destroy()
+	end
+end
+
+--// =========================================================
+--// =========================================================
+--// SOLARA CONFIG FILE SYSTEM
+--// Все конфиги сохраняются в папку AteotSettings.
+--// =========================================================
+
+local HttpService = game:GetService("HttpService")
+local CONFIG_FOLDER = "AteotSettings"
+
+local function getExecutorFunction(name)
+	local direct = _G[name]
+	if type(direct) == "function" then
+		return direct
+	end
+	if type(getgenv) == "function" then
+		local env = getgenv()
+		if type(env[name]) == "function" then
+			return env[name]
+		end
+	end
+	return nil
+end
+
+local FS = {
+	isfolder = getExecutorFunction("isfolder"),
+	makefolder = getExecutorFunction("makefolder"),
+	isfile = getExecutorFunction("isfile"),
+	writefile = getExecutorFunction("writefile"),
+	readfile = getExecutorFunction("readfile"),
+	listfiles = getExecutorFunction("listfiles"),
+}
+
+local function refreshFS()
+	FS.isfolder = getExecutorFunction("isfolder")
+	FS.makefolder = getExecutorFunction("makefolder")
+	FS.isfile = getExecutorFunction("isfile")
+	FS.writefile = getExecutorFunction("writefile")
+	FS.readfile = getExecutorFunction("readfile")
+	FS.listfiles = getExecutorFunction("listfiles")
+end
+
+local function configFileSystemAvailable()
+	refreshFS()
+	return type(FS.makefolder) == "function"
+		and type(FS.isfolder) == "function"
+		and type(FS.writefile) == "function"
+		and type(FS.readfile) == "function"
+		and type(FS.listfiles) == "function"
+end
+
+local function ensureConfigFolder()
+	refreshFS()
+	if not configFileSystemAvailable() then
+		return false, "Solara: file API unavailable"
+	end
+
+	local folderOK, exists = pcall(FS.isfolder, CONFIG_FOLDER)
+	if folderOK and exists == true then
+		return true, CONFIG_FOLDER
+	end
+
+	local createOK, createErr = pcall(FS.makefolder, CONFIG_FOLDER)
+	if not createOK then
+		local checkOK, nowExists = pcall(FS.isfolder, CONFIG_FOLDER)
+		if not checkOK or not nowExists then
+			return false, "Solara: cannot create " .. CONFIG_FOLDER .. ": " .. tostring(createErr)
+		end
+	end
+
+	local checkOK, nowExists = pcall(FS.isfolder, CONFIG_FOLDER)
+	if not checkOK or not nowExists then
+		return false, "Solara: folder " .. CONFIG_FOLDER .. " was not created"
+	end
+
+	return true, CONFIG_FOLDER
+end
+
+local function sanitizeConfigName(name)
+	name = tostring(name or "")
+	name = name:gsub('[\\/:*?"<>|]', "_")
+	name = name:gsub("%s+", " ")
+	name = name:match("^%s*(.-)%s*$") or ""
+	name = name:gsub("%.json$", "")
+	if #name > 48 then
+		name = name:sub(1, 48)
+	end
+	return name
+end
+
+local function configPath(name)
+	return CONFIG_FOLDER .. "/" .. name .. ".json"
+end
+
+local function keyToString(key)
+	if not key or key == Enum.KeyCode.Unknown then
+		return "Unknown"
+	end
+	return key.Name
+end
+
+local function stringToKey(name)
+	if type(name) ~= "string" or name == "Unknown" or name == "" then
+		return Enum.KeyCode.Unknown
+	end
+	return Enum.KeyCode[name] or Enum.KeyCode.Unknown
+end
+
+local function buildConfigData()
+	return {
+		version = 2,
+		theme = currentThemeName,
+		Keys = {
+			openKey = keyToString(Keys.openKey),
+			triggerKey = keyToString(Keys.triggerKey),
+			triggerKey2 = keyToString(Keys.triggerKey2),
+			espKey = keyToString(Keys.espKey),
+			unlockCursorKey = keyToString(Keys.unlockCursorKey),
+			noclipKey = keyToString(Keys.noclipKey),
+			spinbotKey = keyToString(Keys.spinbotKey),
+			bhopKey = keyToString(Keys.bhopKey),
+			skyKey = keyToString(Keys.skyKey),
+			stretchKey = keyToString(Keys.stretchKey),
+			cameraTurnKey = keyToString(Keys.cameraTurnKey),
+		},
+		Features = {
+			triggerbotEnabled = Features.triggerbotEnabled,
+			triggerTargetPart = Features.triggerTargetPart,
+			triggerMode = Features.triggerMode,
+			cursorUnlocked = Features.cursorUnlocked,
+			noclipEnabled = Features.noclipEnabled,
+			espEnabled = Features.espEnabled,
+			spinbotEnabled = Features.spinbotEnabled,
+			spinbotSpeed = Features.spinbotSpeed,
+			bhopEnabled = Features.bhopEnabled,
+			bhopMode = Features.bhopMode,
+			bhopSpeed = Features.bhopSpeed,
+			skyEnabled = Features.skyEnabled,
+			skyMode = Features.skyMode,
+			stretchEnabled = Features.stretchEnabled,
+			antiFlingEnabled = Features.antiFlingEnabled,
+			antiAFKEnabled = Features.antiAFKEnabled,
+			openOnLoad = Features.openOnLoad,
+			rainbowCursorEnabled = Features.rainbowCursorEnabled,
+			cameraTurnEnabled = Features.cameraTurnEnabled,
+		},
+		espSettings = espSettings,
+	}
+end
+
+local function saveConfig(configName)
+	local folderOK, folderResult = ensureConfigFolder()
+	if not folderOK then
+		return false, folderResult
+	end
+
+	configName = sanitizeConfigName(configName)
+	if configName == "" then
+		return false, "Enter a config name"
+	end
+
+	local encodeOK, encoded = pcall(function()
+		return HttpService:JSONEncode(buildConfigData())
+	end)
+	if not encodeOK then
+		return false, "Solara: JSON encode failed: " .. tostring(encoded)
+	end
+
+	refreshFS()
+	if type(FS.writefile) ~= "function" then
+		return false, "Solara: writefile unavailable"
+	end
+
+	local path = configPath(configName)
+	local writeOK, writeErr = pcall(FS.writefile, path, encoded)
+	if not writeOK then
+		return false, "Solara: save failed: " .. tostring(writeErr)
+	end
+
+	-- Проверяем, что файл реально появился.
+	if type(FS.isfile) == "function" then
+		local checkOK, exists = pcall(FS.isfile, path)
+		if not checkOK or not exists then
+			return false, "Solara: file was not created"
+		end
+	end
+
+	return true, configName
+end
+
+local function getConfigFiles()
+	local folderOK, folderResult = ensureConfigFolder()
+	if not folderOK then
+		return {}, folderResult
+	end
+
+	refreshFS()
+	local listOK, result = pcall(FS.listfiles, CONFIG_FOLDER)
+	if not listOK or type(result) ~= "table" then
+		return {}, "Solara: listfiles failed"
+	end
+
+	local files = {}
+	local seen = {}
+	for _, path in ipairs(result) do
+		local normalized = tostring(path):gsub("\\", "/")
+		local name = normalized:match("([^/]+)%.json$")
+		if name and not seen[name:lower()] then
+			seen[name:lower()] = true
+			table.insert(files, {name = name, path = tostring(path)})
+		end
+	end
+
+	table.sort(files, function(a, b)
+		return a.name:lower() < b.name:lower()
+	end)
+	return files
+end
+
+local function loadConfigFile(filePath)
+	refreshFS()
+	if type(FS.readfile) ~= "function" then
+		return false, "Solara: readfile unavailable"
+	end
+
+	local readOK, raw = pcall(FS.readfile, filePath)
+	if not readOK or type(raw) ~= "string" then
+		return false, "Solara: could not read config"
+	end
+
+	local decodeOK, data = pcall(function()
+		return HttpService:JSONDecode(raw)
+	end)
+	if not decodeOK or type(data) ~= "table" then
+		return false, "Solara: invalid JSON config"
+	end
+
+	if type(data.Keys) == "table" then
+		for name, value in pairs(data.Keys) do
+			if Keys[name] ~= nil then
+				Keys[name] = stringToKey(value)
+			end
+		end
+	end
+
+	if type(data.Features) == "table" then
+		for name, value in pairs(data.Features) do
+			if Features[name] ~= nil then
+				Features[name] = value
+			end
+		end
+	end
+
+	if type(data.espSettings) == "table" then
+		for name, value in pairs(data.espSettings) do
+			if espSettings[name] ~= nil then
+				espSettings[name] = value
+			end
+		end
+	end
+
+	if type(data.theme) == "string" and THEMES[data.theme] then
+		currentThemeName = data.theme
+	end
+
+	return true, data
+end
+
+-- Создаём папку сразу при запуске. В Solara она будет в рабочей папке executor.
+task.defer(function()
+	local ok, result = ensureConfigFolder()
+	if ok then
+		print("[ATEOT] Solara config folder ready: " .. CONFIG_FOLDER)
+	else
+		warn("[ATEOT] " .. tostring(result))
+	end
+end)
+
+function makeDraggable(frame, handle)
+	handle = handle or frame
+	local dragging = false
+	local dragInput, dragStart, startPos
+
+	handle.InputBegan:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseButton1 then
+			dragging = true
+			dragStart = input.Position
+			startPos = frame.Position
+
+			input.Changed:Connect(function()
+				if input.UserInputState == Enum.UserInputState.End then
+					dragging = false
+				end
+			end)
+		end
+	end)
+
+	handle.InputChanged:Connect(function(input)
+		if input.UserInputType == Enum.UserInputType.MouseMovement then
+			dragInput = input
+		end
+	end)
+
+	UserInputService.InputChanged:Connect(function(input)
+		if input == dragInput and dragging then
+			local delta = input.Position - dragStart
+			frame.Position = UDim2.new(
+				startPos.X.Scale,
+				startPos.X.Offset + delta.X,
+				startPos.Y.Scale,
+				startPos.Y.Offset + delta.Y
+			)
+		end
+	end)
+end
+
+
+
+function createRainbowCursor()
+	if rainbowCursorGui then
+		rainbowCursorGui:Destroy()
+		rainbowCursorGui = nil
+		rainbowCursor = nil
+	end
+
+	rainbowCursorGui = Instance.new("ScreenGui")
+	rainbowCursorGui.Name = "RainbowCursor"
+	rainbowCursorGui.Parent = playerGui
+	rainbowCursorGui.ResetOnSpawn = false
+	rainbowCursorGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+	rainbowCursor = Instance.new("Frame")
+	rainbowCursor.Size = UDim2.new(0, 30, 0, 30)
+	rainbowCursor.BackgroundTransparency = 0.4
+	rainbowCursor.Parent = rainbowCursorGui
+	rainbowCursor.ZIndex = 999
+
+	local circle = Instance.new("ImageLabel")
+	circle.Size = UDim2.new(1, 0, 1, 0)
+	circle.Image = "rbxassetid://3295988371"
+	circle.BackgroundTransparency = 1
+	circle.Parent = rainbowCursor
+
+	local border = Instance.new("UIStroke")
+	border.Color = Color3.new(1, 1, 1)
+	border.Thickness = 2
+	border.Transparency = 0.3
+	border.Parent = rainbowCursor
+
+	Corner(rainbowCursor, 15)
+
+	mouse.Icon = "rbxasset://textures/ui/cursors/blank.cur"
+
+	return rainbowCursor
+end
+
+function updateRainbowCursor()
+	if not rainbowCursor or not Features.rainbowCursorEnabled then return end
+	rainbowHue = (rainbowHue + 0.3) % 360
+	local color = Color3.fromHSV(rainbowHue / 360, 1, 1)
+	rainbowCursor.BackgroundColor3 = color
+	rainbowCursor.Position = UDim2.new(0, mouse.X - 15, 0, mouse.Y - 15)
+end
+
+function toggleRainbowCursor(state)
+	Features.rainbowCursorEnabled = state
+	if state then
+		if not rainbowCursorGui then
+			createRainbowCursor()
+		end
+		rainbowCursorGui.Visible = true
+		rainbowCursor.Visible = true
+		mouse.Icon = "rbxasset://textures/ui/cursors/blank.cur"
+	else
+		if rainbowCursorGui then
+			rainbowCursorGui.Visible = false
+		end
+		mouse.Icon = ""
+	end
+end
+
+
+
+gui = New("ScreenGui", {
+	Name = "AteotHub",
+	Parent = playerGui,
+	IgnoreGuiInset = true,
+	ResetOnSpawn = false,
+	DisplayOrder = 999,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+})
+
+espLayer = New("Folder", {
+	Name = "ESPLayer",
+	Parent = gui
+})
+
+
+
+background = New("Frame", {
+	Name = "Background",
+	Parent = gui,
+	Size = UDim2.fromScale(1, 1),
+	BackgroundColor3 = Color3.new(0, 0, 0),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ZIndex = 1,
+})
+
+particleLayer = New("Frame", {
+	Name = "Particles",
+	Parent = gui,
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	Visible = false,
+	ZIndex = 3,
+})
+
+function createParticle()
+	local size = math.random(2, 5)
+	local particle = New("Frame", {
+		Parent = particleLayer,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(math.random(5, 95) / 100, math.random(10, 110) / 100),
+		Size = UDim2.fromOffset(size, size),
+		BackgroundColor3 = COLORS.Accent,
+		BackgroundTransparency = math.random(25, 65) / 100,
+		BorderSizePixel = 0,
+		ZIndex = 3,
+	})
+	Corner(particle, size)
+	table.insert(particleObjects, particle)
+	table.insert(themeObjects, particle)
+end
+
+for i = 1, 28 do createParticle() end
+
+function animateParticles()
+	for _, particle in ipairs(particleObjects) do
+		if not particle.Parent then continue end
+		local startPosition = particle.Position
+		local newX = startPosition.X.Scale + math.random(-5, 5) / 100
+		local newY = startPosition.Y.Scale - math.random(5, 15) / 100
+
+		Tween(
+			particle,
+			math.random(30, 60) / 10,
+			{
+				Position = UDim2.fromScale(newX, newY),
+				BackgroundTransparency = math.random(45, 85) / 100,
+			},
+			Enum.EasingStyle.Sine
+		)
+	end
+end
+
+task.spawn(function()
+	while gui.Parent do
+		if particleLayer.Visible then animateParticles() end
+		task.wait(2.5)
+	end
+end)
+
+
+openButton = New("TextButton", {
+	Name = "OpenButton",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0, 0.5),
+	Position = UDim2.new(0, 18, 0.5, 0),
+	Size = UDim2.fromOffset(48, 48),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Text = "A",
+	TextColor3 = COLORS.Text,
+	TextSize = 19,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 20,
+})
+
+Corner(openButton, 14)
+openStroke = Stroke(openButton, COLORS.Accent, 0.25, 1.2)
+
+openGlow = New("Frame", {
+	Name = "Glow",
+	Parent = openButton,
+	Position = UDim2.fromOffset(4, 4),
+	Size = UDim2.new(1, -8, 1, -8),
+	BackgroundColor3 = COLORS.Accent,
+	BackgroundTransparency = 0.9,
+	BorderSizePixel = 0,
+	ZIndex = 19,
+})
+
+Corner(openGlow, 11)
+table.insert(themeObjects, openGlow)
+
+openButton.MouseEnter:Connect(function()
+	Tween(openButton, 0.2, { Size = UDim2.fromOffset(52, 52) })
+	Tween(openGlow, 0.2, { BackgroundTransparency = 0.7 })
+end)
+
+openButton.MouseLeave:Connect(function()
+	Tween(openButton, 0.2, { Size = UDim2.fromOffset(48, 48) })
+	Tween(openGlow, 0.2, { BackgroundTransparency = 0.9 })
+end)
+
+
+
+main = New("Frame", {
+	Name = "Main",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = CLOSED_SIZE,
+	BackgroundColor3 = COLORS.Background,
+	BackgroundTransparency = 0.02,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 5,
+})
+
+Corner(main, 18)
+Stroke(main, COLORS.Border, 0.15, 1)
+
+topGlow = New("Frame", {
+	Name = "TopGlow",
+	Parent = main,
+	Position = UDim2.fromOffset(25, 0),
+	Size = UDim2.new(1, -50, 0, 2),
+	BackgroundColor3 = COLORS.Accent,
+	BackgroundTransparency = 0.1,
+	BorderSizePixel = 0,
+	ZIndex = 7,
+})
+
+Corner(topGlow, 2)
+table.insert(themeObjects, topGlow)
+
+--// =========================================================
+--// SIDEBAR & LOGO
+--// =========================================================
+
+sidebar = New("Frame", {
+	Name = "Sidebar",
+	Parent = main,
+	Position = UDim2.fromOffset(0, 0),
+	Size = UDim2.fromOffset(190, 500),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 6,
+})
+
+Corner(sidebar, 18)
+
+sidebarFix = New("Frame", {
+	Name = "SidebarFix",
+	Parent = sidebar,
+	Position = UDim2.new(1, -18, 0, 0),
+	Size = UDim2.fromOffset(18, 500),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 6,
+})
+
+logoCircle = New("Frame", {
+	Name = "LogoCircle",
+	Parent = sidebar,
+	Position = UDim2.fromOffset(24, 25),
+	Size = UDim2.fromOffset(42, 42),
+	BackgroundColor3 = COLORS.Accent,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(logoCircle, 13)
+table.insert(themeObjects, logoCircle)
+
+logo = New("TextLabel", {
+	Name = "Logo",
+	Parent = logoCircle,
+	Size = UDim2.fromScale(1, 1),
+	BackgroundTransparency = 1,
+	Text = "A",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 19,
+	Font = Enum.Font.GothamBlack,
+	ZIndex = 9,
+})
+
+title = New("TextLabel", {
+	Name = "Title",
+	Parent = sidebar,
+	Position = UDim2.fromOffset(77, 24),
+	Size = UDim2.fromOffset(95, 25),
+	BackgroundTransparency = 1,
+	Text = "ATEOT",
+	TextColor3 = COLORS.Text,
+	TextSize = 16,
+	Font = Enum.Font.GothamBlack,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 8,
+})
+
+subtitle = New("TextLabel", {
+	Name = "Subtitle",
+	Parent = sidebar,
+	Position = UDim2.fromOffset(77, 47),
+	Size = UDim2.fromOffset(95, 18),
+	BackgroundTransparency = 1,
+	Text = "HUB",
+	TextColor3 = COLORS.Accent,
+	TextSize = 9,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 8,
+})
+table.insert(themeObjects, subtitle)
+
+nav = New("Frame", {
+	Name = "Navigation",
+	Parent = sidebar,
+	Position = UDim2.fromOffset(15, 105),
+	Size = UDim2.fromOffset(160, 240),
+	BackgroundTransparency = 1,
+	ZIndex = 8,
+})
+
+--// =========================================================
+--// CONTENT & PAGES
+--// =========================================================
+
+content = New("Frame", {
+	Name = "Content",
+	Parent = main,
+	Position = UDim2.fromOffset(190, 0),
+	Size = UDim2.new(1, -190, 1, 0),
+	BackgroundTransparency = 1,
+	ZIndex = 6,
+})
+
+function createPage(name)
+	local page = New("Frame", {
+		Name = name,
+		Parent = content,
+		Position = UDim2.fromOffset(0, 0),
+		Size = UDim2.fromScale(1, 1),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = 7,
+	})
+	pages[name] = page
+	return page
+end
+
+playerPage = createPage("Player")
+visualPage = createPage("Visual")
+skinsPage = createPage("Skins")
+
+function createHeader(page, name, description)
+	New("TextLabel", {
+		Name = "Heading",
+		Parent = page,
+		Position = UDim2.fromOffset(35, 32),
+		Size = UDim2.fromOffset(500, 35),
+		BackgroundTransparency = 1,
+		Text = name,
+		TextColor3 = COLORS.Text,
+		TextSize = 25,
+		Font = Enum.Font.GothamBold,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 9,
+	})
+
+	New("TextLabel", {
+		Name = "Description",
+		Parent = page,
+		Position = UDim2.fromOffset(36, 65),
+		Size = UDim2.fromOffset(520, 22),
+		BackgroundTransparency = 1,
+		Text = description,
+		TextColor3 = COLORS.SubText,
+		TextSize = 11,
+		Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 9,
+	})
+end
+
+createHeader(playerPage, "Player", "Player options & combat enhancements")
+createHeader(visualPage, "Visual", "Visual features and rendering")
+createHeader(skinsPage, "Skins", "Custom skins and cosmetics")
+
+--// =========================================================
+--// NAV BUTTONS
+--// =========================================================
+
+function makeNavButton(text, icon, y, page)
+	local button = New("TextButton", {
+		Name = text .. "Button",
+		Parent = nav,
+		Position = UDim2.fromOffset(0, y),
+		Size = UDim2.fromOffset(160, 44),
+		BackgroundColor3 = COLORS.Panel,
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 9,
+	})
+
+	Corner(button, 10)
+
+	local indicator = New("Frame", {
+		Name = "ActiveIndicator",
+		Parent = button,
+		Position = UDim2.fromOffset(0, 8),
+		Size = UDim2.fromOffset(3, 28),
+		BackgroundColor3 = COLORS.Accent,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ZIndex = 10,
+	})
+
+	Corner(indicator, 3)
+	table.insert(themeObjects, indicator)
+
+	local iconLabel = New("TextLabel", {
+		Name = "NavIcon",
+		Parent = button,
+		Position = UDim2.fromOffset(17, 0),
+		Size = UDim2.fromOffset(25, 44),
+		BackgroundTransparency = 1,
+		Text = icon,
+		TextColor3 = COLORS.SubText,
+		TextSize = 15,
+		Font = Enum.Font.GothamBold,
+		ZIndex = 10,
+	})
+
+	local textLabel = New("TextLabel", {
+		Name = "NavText",
+		Parent = button,
+		Position = UDim2.fromOffset(52, 0),
+		Size = UDim2.fromOffset(95, 44),
+		BackgroundTransparency = 1,
+		Text = text,
+		TextColor3 = COLORS.SubText,
+		TextSize = 12,
+		Font = Enum.Font.GothamBold,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 10,
+	})
+
+	button.MouseEnter:Connect(function()
+		if State.selectedButton ~= button then
+			Tween(button, 0.15, { BackgroundColor3 = COLORS.PanelHover })
+		end
+	end)
+
+	button.MouseLeave:Connect(function()
+		if State.selectedButton ~= button then
+			Tween(button, 0.15, { BackgroundColor3 = COLORS.Panel })
+		end
+	end)
+
+	button.MouseButton1Click:Connect(function()
+		if State.selectedButton and State.selectedButton ~= button then
+			local oldIndicator = State.selectedButton:FindFirstChild("ActiveIndicator")
+			local oldIcon = State.selectedButton:FindFirstChild("NavIcon")
+			local oldText = State.selectedButton:FindFirstChild("NavText")
+
+			Tween(State.selectedButton, 0.18, { BackgroundColor3 = COLORS.Panel })
+			if oldIcon then Tween(oldIcon, 0.18, { TextColor3 = COLORS.SubText }) end
+			if oldText then Tween(oldText, 0.18, { TextColor3 = COLORS.SubText }) end
+			if oldIndicator then Tween(oldIndicator, 0.18, { BackgroundTransparency = 1 }) end
+		end
+
+		State.selectedButton = button
+		Tween(button, 0.2, { BackgroundColor3 = Color3.fromRGB(26, 20, 25) })
+		Tween(indicator, 0.2, { BackgroundTransparency = 0 })
+		Tween(iconLabel, 0.2, { TextColor3 = COLORS.Text })
+		Tween(textLabel, 0.2, { TextColor3 = COLORS.Text })
+
+		for _, currentPage in pairs(pages) do
+			currentPage.Visible = false
+		end
+
+		page.Visible = true
+	end)
+
+	return button
+end
+
+playerButton = makeNavButton("Player", "●", 0, playerPage)
+visualButton = makeNavButton("Visual", "◉", 50, visualPage)
+skinsButton = makeNavButton("Skins", "★", 100, skinsPage)
+
+--// =========================================================
+--// KEYBINDS OVERLAY
+--// =========================================================
+
+keybindsFrame = New("Frame", {
+	Name = "KeybindsOverlay",
+	Parent = gui,
+	Position = UDim2.fromOffset(20, 20),
+	Size = UDim2.fromOffset(220, 230),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 100,
+})
+
+Corner(keybindsFrame, 12)
+Stroke(keybindsFrame, COLORS.Border, 0.2, 1)
+makeDraggable(keybindsFrame)
+
+kbTitle = New("TextLabel", {
+	Parent = keybindsFrame,
+	Position = UDim2.fromOffset(15, 10),
+	Size = UDim2.fromOffset(190, 20),
+	BackgroundTransparency = 1,
+	Text = "Active Binds (Drag)",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 101,
+})
+
+kbLine = New("Frame", {
+	Parent = keybindsFrame,
+	Position = UDim2.fromOffset(15, 34),
+	Size = UDim2.new(1, -30, 0, 1),
+	BackgroundColor3 = COLORS.Accent,
+	BorderSizePixel = 0,
+	ZIndex = 101,
+})
+table.insert(themeObjects, kbLine)
+
+kbContainer = New("Frame", {
+	Parent = keybindsFrame,
+	Position = UDim2.fromOffset(15, 42),
+	Size = UDim2.new(1, -30, 0, 180),
+	BackgroundTransparency = 1,
+	ZIndex = 101,
+})
+
+kbLayout = New("UIListLayout", {
+	Parent = kbContainer,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 5)
+})
+
+function updateKeybindsList()
+	for _, child in ipairs(kbContainer:GetChildren()) do
+		if child:IsA("Frame") then child:Destroy() end
+	end
+
+	local binds = {}
+
+	if Keys.openKey and Keys.openKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Open Menu", key = Keys.openKey })
+	end
+	if Keys.triggerKey and Keys.triggerKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Triggerbot", key = Keys.triggerKey })
+	end
+	if Keys.triggerKey2 and Keys.triggerKey2 ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Triggerbot (Alt)", key = Keys.triggerKey2 })
+	end
+	if Keys.espKey and Keys.espKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "ESP", key = Keys.espKey })
+	end
+	if Keys.unlockCursorKey and Keys.unlockCursorKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Unlock Cursor", key = Keys.unlockCursorKey })
+	end
+	if Keys.noclipKey and Keys.noclipKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Noclip", key = Keys.noclipKey })
+	end
+	if Keys.spinbotKey and Keys.spinbotKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Spinbot", key = Keys.spinbotKey })
+	end
+	if Keys.bhopKey and Keys.bhopKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Bunny Hop", key = Keys.bhopKey })
+	end
+	if Keys.skyKey and Keys.skyKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Sky Mode", key = Keys.skyKey })
+	end
+	if Keys.stretchKey and Keys.stretchKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Stretch", key = Keys.stretchKey })
+	end
+	if Keys.cameraTurnKey and Keys.cameraTurnKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Move Camera", key = Keys.cameraTurnKey })
+	end
+
+	for i, b in ipairs(binds) do
+		local row = New("Frame", {
+			Parent = kbContainer,
+			Size = UDim2.new(1, 0, 0, 16),
+			BackgroundTransparency = 1,
+			ZIndex = 101,
+		})
+
+		New("TextLabel", {
+			Parent = row,
+			Size = UDim2.new(0.55, 0, 1, 0),
+			BackgroundTransparency = 1,
+			Text = b.name,
+			TextColor3 = COLORS.SubText,
+			TextSize = 9,
+			Font = Enum.Font.GothamMedium,
+			TextXAlignment = Enum.TextXAlignment.Left,
+			ZIndex = 101,
+		})
+
+		New("TextLabel", {
+			Parent = row,
+			Position = UDim2.new(0.55, 0, 0, 0),
+			Size = UDim2.new(0.45, 0, 1, 0),
+			BackgroundTransparency = 1,
+			Text = "[" .. keyName(b.key) .. "]",
+			TextColor3 = COLORS.Accent,
+			TextSize = 9,
+			Font = Enum.Font.GothamBold,
+			TextXAlignment = Enum.TextXAlignment.Right,
+			ZIndex = 101,
+		})
+	end
+end
+
+--// =========================================================
+--// SPINBOT ROW
+--// =========================================================
+
+spinbotRow = New("Frame", {
+	Name = "SpinbotRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 110),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(spinbotRow, 10)
+Stroke(spinbotRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = spinbotRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Spinbot",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = spinbotRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Auto-rotates your character",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+spinbotToggle = New("TextButton", {
+	Parent = spinbotRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(spinbotToggle, 12)
+Stroke(spinbotToggle, COLORS.Border, 0.3, 1)
+
+spinbotKnob = New("Frame", {
+	Parent = spinbotToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(spinbotKnob, 9)
+
+spinbotSettingsBtn = New("TextButton", {
+	Parent = spinbotRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(spinbotSettingsBtn, 7)
+
+function setSpinbot(state)
+	Features.spinbotEnabled = state
+	if Features.spinbotEnabled then
+		Tween(spinbotToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(spinbotKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(spinbotToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(spinbotKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+spinbotToggle.MouseButton1Click:Connect(function() setSpinbot(not Features.spinbotEnabled) end)
+
+RunService.RenderStepped:Connect(function(deltaTime)
+	if Features.spinbotEnabled then
+		local character = player.Character
+		if not character then return end
+		local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+		local head = character:FindFirstChild("Head")
+		if not humanoidRootPart or not head then return end
+
+		local isFirstPerson = (camera.CFrame.Position - head.Position).Magnitude < 1.5
+
+		if isFirstPerson then
+			local savedCameraCFrame = camera.CFrame
+			humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, math.rad(Features.spinbotSpeed), 0)
+			camera.CFrame = savedCameraCFrame
+		else
+			humanoidRootPart.CFrame = humanoidRootPart.CFrame * CFrame.Angles(0, math.rad(Features.spinbotSpeed), 0)
+		end
+	end
+end)
+
+spinbotPopup = New("Frame", {
+	Name = "SpinbotPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(spinbotPopup, 14)
+Stroke(spinbotPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = spinbotPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Spinbot Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeSpinbot = New("TextButton", {
+	Parent = spinbotPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeSpinbot, 6)
+
+New("TextLabel", {
+	Parent = spinbotPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+spinbotRebindBtn = New("TextButton", {
+	Parent = spinbotPopup,
+	Position = UDim2.new(1, -120, 0, 45),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.spinbotKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(spinbotRebindBtn, 6)
+
+spinbotDeleteBindBtn = New("TextButton", {
+	Parent = spinbotPopup,
+	Position = UDim2.new(1, -12, 0, 45),
+	Size = UDim2.fromOffset(12, 26),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(spinbotDeleteBindBtn, 6)
+
+spinbotDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.spinbotKey = Enum.KeyCode.Unknown
+	spinbotRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+New("TextLabel", {
+	Parent = spinbotPopup,
+	Position = UDim2.fromOffset(20, 85),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Speed (0-1000)",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+spinbotSpeedSlider = New("TextBox", {
+	Parent = spinbotPopup,
+	Position = UDim2.new(1, -120, 0, 82),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = tostring(Features.spinbotSpeed),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	ZIndex = 61,
+})
+Corner(spinbotSpeedSlider, 6)
+
+spinbotSpeedSlider.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		local num = tonumber(spinbotSpeedSlider.Text)
+		if num and num >= 0 then
+			Features.spinbotSpeed = num
+		else
+			spinbotSpeedSlider.Text = tostring(Features.spinbotSpeed)
+		end
+	end
+end)
+
+spinbotSettingsBtn.MouseButton1Click:Connect(function()
+	State.bindSettingsOpen = not State.bindSettingsOpen
+	if State.bindSettingsOpen then
+		spinbotPopup.Visible = true
+		Tween(spinbotPopup, 0.25, { Size = UDim2.fromOffset(260, 130) }, Enum.EasingStyle.Back)
+	else
+		Tween(spinbotPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() spinbotPopup.Visible = false end)
+	end
+end)
+
+closeSpinbot.MouseButton1Click:Connect(function()
+	State.bindSettingsOpen = false
+	Tween(spinbotPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() spinbotPopup.Visible = false end)
+end)
+
+spinbotRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForSpinbotKey = true
+	spinbotRebindBtn.Text = "Press key..."
+end)
+
+--// =========================================================
+--// BHOP ROW
+--// =========================================================
+
+bhopRow = New("Frame", {
+	Name = "BhopRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 170),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(bhopRow, 10)
+Stroke(bhopRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = bhopRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Bunny Hop",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = bhopRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Auto-jump with speed control",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+bhopToggle = New("TextButton", {
+	Parent = bhopRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(bhopToggle, 12)
+Stroke(bhopToggle, COLORS.Border, 0.3, 1)
+
+bhopKnob = New("Frame", {
+	Parent = bhopToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(bhopKnob, 9)
+
+bhopSettingsBtn = New("TextButton", {
+	Parent = bhopRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(bhopSettingsBtn, 7)
+
+function setBhop(state)
+	Features.bhopEnabled = state
+	if Features.bhopEnabled then
+		Tween(bhopToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(bhopKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(bhopToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(bhopKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+bhopToggle.MouseButton1Click:Connect(function() setBhop(not Features.bhopEnabled) end)
+
+function getMoveDirection(humanoid)
+	local moveDir = humanoid.MoveDirection
+	if moveDir.Magnitude == 0 then
+		local cam = Workspace.CurrentCamera
+		if cam then
+			moveDir = cam.CFrame.LookVector
+			moveDir = Vector3.new(moveDir.X, 0, moveDir.Z)
+		end
+	end
+	return moveDir.Magnitude > 0 and moveDir.Unit or Vector3.zero
+end
+
+RunService.Heartbeat:Connect(function()
+	if not Features.bhopEnabled then return end
+
+	if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+		local character = player.Character
+		if not character then return end
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid")
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+
+		if humanoid and hrp and humanoid.Health > 0 then
+			local moveDir = getMoveDirection(humanoid)
+
+			if humanoid.FloorMaterial ~= Enum.Material.Air then
+				humanoid.Jump = true
+
+				if Features.bhopMode == "TP" and canTp and moveDir.Magnitude > 0 then
+					canTp = false
+					local jumpAirTime = 0.35
+					local tpDistance = moveDir * (Features.bhopSpeed * jumpAirTime)
+					hrp.CFrame = hrp.CFrame + tpDistance
+					task.delay(0.15, function()
+						canTp = true
+					end)
+				end
+			end
+
+			if Features.bhopMode == "NORMAL" and humanoid.FloorMaterial == Enum.Material.Air then
+				if moveDir.Magnitude > 0 then
+					local currentY = hrp.AssemblyLinearVelocity.Y
+					hrp.AssemblyLinearVelocity = Vector3.new(
+						moveDir.X * Features.bhopSpeed,
+						currentY,
+						moveDir.Z * Features.bhopSpeed
+					)
+				end
+			end
+		end
+	end
+end)
+
+bhopPopup = New("Frame", {
+	Name = "BhopPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(bhopPopup, 14)
+Stroke(bhopPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = bhopPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Bunny Hop Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeBhop = New("TextButton", {
+	Parent = bhopPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeBhop, 6)
+
+New("TextLabel", {
+	Parent = bhopPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+bhopRebindBtn = New("TextButton", {
+	Parent = bhopPopup,
+	Position = UDim2.new(1, -120, 0, 45),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.bhopKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(bhopRebindBtn, 6)
+
+bhopDeleteBindBtn = New("TextButton", {
+	Parent = bhopPopup,
+	Position = UDim2.new(1, -12, 0, 45),
+	Size = UDim2.fromOffset(12, 26),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(bhopDeleteBindBtn, 6)
+
+bhopDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.bhopKey = Enum.KeyCode.Unknown
+	bhopRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+New("TextLabel", {
+	Parent = bhopPopup,
+	Position = UDim2.fromOffset(20, 85),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Speed",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+bhopSpeedSlider = New("TextBox", {
+	Parent = bhopPopup,
+	Position = UDim2.new(1, -120, 0, 82),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = tostring(Features.bhopSpeed),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	ZIndex = 61,
+})
+Corner(bhopSpeedSlider, 6)
+
+bhopSpeedSlider.FocusLost:Connect(function(enterPressed)
+	if enterPressed then
+		local num = tonumber(bhopSpeedSlider.Text)
+		if num and num > 0 and num <= 500 then
+			Features.bhopSpeed = num
+		else
+			bhopSpeedSlider.Text = tostring(Features.bhopSpeed)
+		end
+	end
+end)
+
+New("TextLabel", {
+	Parent = bhopPopup,
+	Position = UDim2.fromOffset(20, 122),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Mode",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+bhopModeBtn = New("TextButton", {
+	Parent = bhopPopup,
+	Position = UDim2.new(1, -120, 0, 119),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = Features.bhopMode,
+	TextColor3 = COLORS.Accent,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(bhopModeBtn, 6)
+
+bhopModeBtn.MouseButton1Click:Connect(function()
+	if Features.bhopMode == "NORMAL" then
+		Features.bhopMode = "TP"
+	else
+		Features.bhopMode = "NORMAL"
+	end
+	bhopModeBtn.Text = Features.bhopMode
+end)
+
+bhopSettingsBtn.MouseButton1Click:Connect(function()
+	State.bhopBindSettingsOpen = not State.bhopBindSettingsOpen
+	if State.bhopBindSettingsOpen then
+		bhopPopup.Visible = true
+		Tween(bhopPopup, 0.25, { Size = UDim2.fromOffset(260, 165) }, Enum.EasingStyle.Back)
+	else
+		Tween(bhopPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() bhopPopup.Visible = false end)
+	end
+end)
+
+closeBhop.MouseButton1Click:Connect(function()
+	State.bhopBindSettingsOpen = false
+	Tween(bhopPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() bhopPopup.Visible = false end)
+end)
+
+bhopRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForBhopKey = true
+	bhopRebindBtn.Text = "Press key..."
+end)
+
+--// =========================================================
+--// NOCLIP ROW
+--// =========================================================
+
+noclipRow = New("Frame", {
+	Name = "NoclipRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 230),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(noclipRow, 10)
+Stroke(noclipRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = noclipRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Noclip",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = noclipRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Walk through walls and obstacles",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+noclipToggle = New("TextButton", {
+	Parent = noclipRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(noclipToggle, 12)
+Stroke(noclipToggle, COLORS.Border, 0.3, 1)
+
+noclipKnob = New("Frame", {
+	Parent = noclipToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(noclipKnob, 9)
+
+noclipSettingsBtn = New("TextButton", {
+	Parent = noclipRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(noclipSettingsBtn, 7)
+
+function setNoclip(state)
+	Features.noclipEnabled = state
+	if Features.noclipEnabled then
+		Tween(noclipToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(noclipKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(noclipToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(noclipKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+noclipToggle.MouseButton1Click:Connect(function() setNoclip(not Features.noclipEnabled) end)
+
+RunService.Stepped:Connect(function()
+	if Features.noclipEnabled and player.Character then
+		for _, part in pairs(player.Character:GetDescendants()) do
+			if part:IsA("BasePart") then
+				part.CanCollide = false
+			end
+		end
+	end
+end)
+
+noclipBindPopup = New("Frame", {
+	Name = "NoclipBindPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(noclipBindPopup, 14)
+Stroke(noclipBindPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = noclipBindPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Noclip Keybind",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeNoclipBind = New("TextButton", {
+	Parent = noclipBindPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeNoclipBind, 6)
+
+noclipRebindBtn = New("TextButton", {
+	Parent = noclipBindPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.new(1, -60, 0, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.noclipKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(noclipRebindBtn, 8)
+
+noclipDeleteBindBtn = New("TextButton", {
+	Parent = noclipBindPopup,
+	Position = UDim2.new(1, -32, 0, 48),
+	Size = UDim2.fromOffset(24, 32),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(noclipDeleteBindBtn, 8)
+
+noclipDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.noclipKey = Enum.KeyCode.Unknown
+	noclipRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+noclipSettingsBtn.MouseButton1Click:Connect(function()
+	State.noclipBindSettingsOpen = not State.noclipBindSettingsOpen
+	if State.noclipBindSettingsOpen then
+		noclipBindPopup.Visible = true
+		Tween(noclipBindPopup, 0.25, { Size = UDim2.fromOffset(260, 95) }, Enum.EasingStyle.Back)
+	else
+		Tween(noclipBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() noclipBindPopup.Visible = false end)
+	end
+end)
+
+closeNoclipBind.MouseButton1Click:Connect(function()
+	State.noclipBindSettingsOpen = false
+	Tween(noclipBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() noclipBindPopup.Visible = false end)
+end)
+
+noclipRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForNoclipKey = true
+	noclipRebindBtn.Text = "Press a key..."
+end)
+
+--// =========================================================
+--// UNLOCK CURSOR ROW
+--// =========================================================
+
+cursorRow = New("Frame", {
+	Name = "CursorRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 290),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(cursorRow, 10)
+Stroke(cursorRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = cursorRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Unlock Cursor",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = cursorRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Frees mouse cursor in camera lock modes",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+cursorToggle = New("TextButton", {
+	Parent = cursorRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(cursorToggle, 12)
+Stroke(cursorToggle, COLORS.Border, 0.3, 1)
+
+cursorKnob = New("Frame", {
+	Parent = cursorToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(cursorKnob, 9)
+
+cursorSettingsBtn = New("TextButton", {
+	Parent = cursorRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(cursorSettingsBtn, 7)
+
+function setCursorUnlock(state)
+	Features.cursorUnlocked = state
+	if Features.cursorUnlocked then
+		Tween(cursorToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(cursorKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(cursorToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(cursorKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+cursorToggle.MouseButton1Click:Connect(function() setCursorUnlock(not Features.cursorUnlocked) end)
+
+cursorBindPopup = New("Frame", {
+	Name = "CursorBindPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(cursorBindPopup, 14)
+Stroke(cursorBindPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = cursorBindPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Unlock Cursor Keybind",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeCursorBind = New("TextButton", {
+	Parent = cursorBindPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeCursorBind, 6)
+
+cursorRebindBtn = New("TextButton", {
+	Parent = cursorBindPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.new(1, -60, 0, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.unlockCursorKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(cursorRebindBtn, 8)
+
+cursorDeleteBindBtn = New("TextButton", {
+	Parent = cursorBindPopup,
+	Position = UDim2.new(1, -32, 0, 48),
+	Size = UDim2.fromOffset(24, 32),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(cursorDeleteBindBtn, 8)
+
+cursorDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.unlockCursorKey = Enum.KeyCode.Unknown
+	cursorRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+cursorSettingsBtn.MouseButton1Click:Connect(function()
+	State.cursorBindSettingsOpen = not State.cursorBindSettingsOpen
+	if State.cursorBindSettingsOpen then
+		cursorBindPopup.Visible = true
+		Tween(cursorBindPopup, 0.25, { Size = UDim2.fromOffset(260, 95) }, Enum.EasingStyle.Back)
+	else
+		Tween(cursorBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() cursorBindPopup.Visible = false end)
+	end
+end)
+
+closeCursorBind.MouseButton1Click:Connect(function()
+	State.cursorBindSettingsOpen = false
+	Tween(cursorBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() cursorBindPopup.Visible = false end)
+end)
+
+cursorRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForCursorKey = true
+	cursorRebindBtn.Text = "Press a key..."
+end)
+
+RunService.RenderStepped:Connect(function()
+	if State.opened or Features.cursorUnlocked then
+		UserInputService.MouseBehavior = Enum.MouseBehavior.Default
+	end
+end)
+
+--// =========================================================
+--// TRIGGERBOT ROW
+--// =========================================================
+
+triggerbotRow = New("Frame", {
+	Name = "TriggerbotRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 350),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(triggerbotRow, 10)
+Stroke(triggerbotRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = triggerbotRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Triggerbot",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = triggerbotRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Automatically shoots targets under cursor",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+tbToggle = New("TextButton", {
+	Parent = triggerbotRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(tbToggle, 12)
+Stroke(tbToggle, COLORS.Border, 0.3, 1)
+
+tbKnob = New("Frame", {
+	Parent = tbToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(tbKnob, 9)
+
+tbSettingsBtn = New("TextButton", {
+	Parent = triggerbotRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(tbSettingsBtn, 7)
+
+function setTriggerbot(state)
+	Features.triggerbotEnabled = state
+	if Features.triggerbotEnabled then
+		Tween(tbToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(tbKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(tbToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(tbKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+tbToggle.MouseButton1Click:Connect(function() setTriggerbot(not Features.triggerbotEnabled) end)
+
+function triggerbotShoot(hit)
+	if not hit then return end
+	local character = hit.Parent
+	if character and character:FindFirstChild("Humanoid") and character.Name ~= player.Name then
+		local validPart = false
+		
+		if Features.triggerTargetPart == "All" then
+			validPart = true
+		elseif Features.triggerTargetPart == "Head" then
+			if hit.Name == "Head" then validPart = true end
+		elseif Features.triggerTargetPart == "Torso" then
+			if hit.Name == "Torso" or hit.Name == "UpperTorso" or hit.Name == "LowerTorso" or hit.Name == "HumanoidRootPart" then
+				validPart = true
+			end
+		end
+
+		if validPart then
+			if Features.triggerMode == "WithAim" then
+				if triggerbotFlick then
+					triggerbotFlick()
+				end
+			end
+			mouse1press()
+			task.wait()
+			mouse1release()
+		end
+	end
+end
+
+triggerbotFlick = nil
+do
+	local flickActive = false
+	local flickProgress = 0
+	local flickStartCFrame = nil
+	local flickTargetCFrame = nil
+	local FLICK_DURATION = 0.15
+	local FLICK_STRENGTH = 180
+
+	local function getHumanizedOffset(progress)
+		local smoothProgress = progress * progress * (3 - 2 * progress)
+		local shakeX = math.sin(progress * math.pi * 30) * 0.3 * (1 - progress)
+		local shakeY = math.cos(progress * math.pi * 25 + 1.2) * 0.3 * (1 - progress)
+		local arcY = math.sin(progress * math.pi) * 1.5
+		return smoothProgress, shakeX, shakeY, arcY
+	end
+
+	triggerbotFlick = function()
+		if flickActive then return end
+		if not camera then return end
+		
+		local randomSign = (math.random(1, 2) == 1 and 1) or -1
+		local randomStrength = FLICK_STRENGTH * randomSign * (0.85 + math.random() * 0.3)
+		
+		local yaw = math.rad(randomStrength)
+		local pitch = math.rad(math.random(-5, 5) * 0.5)
+		
+		local rotationY = CFrame.Angles(0, yaw, 0)
+		local rotationX = CFrame.Angles(pitch, 0, 0)
+		local totalRotation = rotationX * rotationY
+		
+		local currentPos = camera.CFrame.Position
+		local newCFrame = CFrame.new(currentPos) * (camera.CFrame.Rotation * totalRotation)
+		flickTargetCFrame = CFrame.new(currentPos, newCFrame.LookVector + currentPos)
+		
+		flickStartCFrame = camera.CFrame
+		flickProgress = 0
+		flickActive = true
+	end
+
+	RunService.RenderStepped:Connect(function(deltaTime)
+		if not flickActive or not camera then
+			if flickActive then flickActive = false end
+			return
+		end
+		
+		flickProgress = flickProgress + (deltaTime / FLICK_DURATION)
+		
+		if flickProgress >= 1 then
+			flickProgress = 1
+			if flickTargetCFrame then
+				camera.CFrame = flickTargetCFrame
+			end
+			flickActive = false
+			return
+		end
+		
+		local smoothP, shakeX, shakeY, arcY = getHumanizedOffset(flickProgress)
+		
+		local startPos = flickStartCFrame.Position
+		local startLook = flickStartCFrame.LookVector
+		local startUp = flickStartCFrame.UpVector
+		local startRight = flickStartCFrame.RightVector
+		
+		local targetLook = flickTargetCFrame.LookVector
+		local targetUp = flickTargetCFrame.UpVector
+		
+		local currentLook = startLook:Lerp(targetLook, smoothP)
+		local currentUp = startUp:Lerp(targetUp, smoothP)
+		
+		currentLook = currentLook.Unit
+		currentUp = currentUp.Unit
+		
+		local shakeRight = startRight * math.rad(shakeX)
+		local shakeUp = startUp * math.rad(shakeY)
+		local shakeOffset = shakeRight + shakeUp
+		
+		local arcOffset = startUp * math.rad(arcY * 0.8)
+		
+		local noisyLook = (currentLook + shakeOffset + arcOffset).Unit
+		
+		local newCFrame = CFrame.lookAt(startPos, startPos + noisyLook, currentUp)
+		
+		camera.CFrame = newCFrame
+	end)
+end
+
+RunService.RenderStepped:Connect(function()
+	if Features.triggerbotEnabled and mouse.Target then
+		local hit = mouse.Target
+		triggerbotShoot(hit)
+	end
+end)
+
+tbBindPopup = New("Frame", {
+	Name = "TBBindPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(tbBindPopup, 14)
+Stroke(tbBindPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = tbBindPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Triggerbot Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeTBBind = New("TextButton", {
+	Parent = tbBindPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeTBBind, 6)
+
+New("TextLabel", {
+	Parent = tbBindPopup,
+	Position = UDim2.fromOffset(20, 45),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+tbRebindBtn = New("TextButton", {
+	Parent = tbBindPopup,
+	Position = UDim2.new(1, -120, 0, 42),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.triggerKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(tbRebindBtn, 6)
+
+tbDeleteBindBtn = New("TextButton", {
+	Parent = tbBindPopup,
+	Position = UDim2.new(1, -12, 0, 42),
+	Size = UDim2.fromOffset(12, 26),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(tbDeleteBindBtn, 6)
+
+tbDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.triggerKey = Enum.KeyCode.Unknown
+	tbRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+New("TextLabel", {
+	Parent = tbBindPopup,
+	Position = UDim2.fromOffset(20, 80),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Hit Part",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+tbPartBtn = New("TextButton", {
+	Parent = tbBindPopup,
+	Position = UDim2.new(1, -120, 0, 77),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = Features.triggerTargetPart,
+	TextColor3 = COLORS.Accent,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(tbPartBtn, 6)
+
+tbPartBtn.MouseButton1Click:Connect(function()
+	if Features.triggerTargetPart == "All" then
+		Features.triggerTargetPart = "Head"
+	elseif Features.triggerTargetPart == "Head" then
+		Features.triggerTargetPart = "Torso"
+	else
+		Features.triggerTargetPart = "All"
+	end
+	tbPartBtn.Text = Features.triggerTargetPart
+end)
+
+New("TextLabel", {
+	Parent = tbBindPopup,
+	Position = UDim2.fromOffset(20, 115),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Trigger Mode",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+tbModeBtn = New("TextButton", {
+	Parent = tbBindPopup,
+	Position = UDim2.new(1, -120, 0, 112),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = Features.triggerMode,
+	TextColor3 = COLORS.Accent,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(tbModeBtn, 6)
+
+tbModeBtn.MouseButton1Click:Connect(function()
+	if Features.triggerMode == "Normal" then
+		Features.triggerMode = "WithAim"
+	else
+		Features.triggerMode = "Normal"
+	end
+	tbModeBtn.Text = Features.triggerMode
+end)
+
+tbSettingsBtn.MouseButton1Click:Connect(function()
+	State.bindSettingsOpen = not State.bindSettingsOpen
+	if State.bindSettingsOpen then
+		tbBindPopup.Visible = true
+		Tween(tbBindPopup, 0.25, { Size = UDim2.fromOffset(260, 155) }, Enum.EasingStyle.Back)
+	else
+		Tween(tbBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() tbBindPopup.Visible = false end)
+	end
+end)
+
+closeTBBind.MouseButton1Click:Connect(function()
+	State.bindSettingsOpen = false
+	Tween(tbBindPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() tbBindPopup.Visible = false end)
+end)
+
+tbRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForTriggerKey = true
+	tbRebindBtn.Text = "Press key..."
+end)
+
+--// =========================================================
+--// PREVIEW WINDOW (ESP)
+--// =========================================================
+
+espPreviewWindow = New("Frame", {
+	Name = "ESPPreviewWindow",
+	Parent = main,
+	Position = UDim2.new(0, -230, 0, 0),
+	Size = UDim2.fromOffset(220, 470),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 6,
+})
+
+Corner(espPreviewWindow, 18)
+Stroke(espPreviewWindow, COLORS.Border, 0.15, 1)
+
+New("TextLabel", {
+	Parent = espPreviewWindow,
+	Position = UDim2.fromOffset(15, 15),
+	Size = UDim2.fromOffset(190, 20),
+	BackgroundTransparency = 1,
+	Text = "ESP Preview",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Center,
+	ZIndex = 7,
+})
+
+previewBoxArea = New("Frame", {
+	Parent = espPreviewWindow,
+	Position = UDim2.fromOffset(15, 45),
+	Size = UDim2.new(1, -30, 1, -60),
+	BackgroundColor3 = COLORS.Background,
+	BorderSizePixel = 0,
+	ZIndex = 7,
+})
+Corner(previewBoxArea, 12)
+
+prevBox = New("Frame", {
+	Parent = previewBoxArea,
+	Position = UDim2.new(0.5, -45, 0.5, -80),
+	Size = UDim2.fromOffset(90, 160),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+Stroke(prevBox, COLORS.Accent, 0, 1.5)
+
+prevTracer = New("Frame", {
+	Parent = previewBoxArea,
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	Size = UDim2.fromOffset(1, 180),
+	AnchorPoint = Vector2.new(0.5, 0),
+	BackgroundColor3 = COLORS.Accent,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+prevName = New("TextLabel", {
+	Parent = previewBoxArea,
+	Position = UDim2.new(0.5, -100, 0.5, -105),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Enemy_Player [15m]",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 8,
+})
+
+prevTool = New("TextLabel", {
+	Parent = previewBoxArea,
+	Position = UDim2.new(0.5, -100, 0.5, 85),
+	Size = UDim2.fromOffset(200, 15),
+	BackgroundTransparency = 1,
+	Text = "Held: Rifle",
+	TextColor3 = COLORS.SubText,
+	TextSize = 9,
+	Font = Enum.Font.GothamMedium,
+	ZIndex = 8,
+})
+
+prevHealthBg = New("Frame", {
+	Parent = previewBoxArea,
+	Position = UDim2.new(0.5, -52, 0.5, -80),
+	Size = UDim2.fromOffset(4, 160),
+	BackgroundColor3 = Color3.fromRGB(30, 30, 30),
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+prevHealthBar = New("Frame", {
+	Parent = prevHealthBg,
+	Position = UDim2.new(0, 0, 0.2, 0),
+	Size = UDim2.new(1, 0, 0.8, 0),
+	BackgroundColor3 = Color3.fromRGB(50, 220, 50),
+	BorderSizePixel = 0,
+	ZIndex = 9,
+})
+
+function updatePreview()
+	prevBox.Visible = espSettings.Boxes
+	prevTracer.Visible = espSettings.Tracers
+	prevName.Visible = espSettings.ShowName
+	if espSettings.ShowDistance then
+		prevName.Text = "Enemy_Player [15m]"
+	else
+		prevName.Text = "Enemy_Player"
+	end
+	prevTool.Visible = espSettings.ShowHeldTool
+	prevHealthBg.Visible = espSettings.HealthBar
+end
+
+--// =========================================================
+--// MOVE CAMERA / VIDEO TURN
+--// =========================================================
+
+cameraTurnRow = New("Frame", {
+	Name = "CameraTurnRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 410),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+Corner(cameraTurnRow, 10)
+Stroke(cameraTurnRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = cameraTurnRow,
+	Position = UDim2.fromOffset(16, 7),
+	Size = UDim2.fromOffset(250, 18),
+	BackgroundTransparency = 1,
+	Text = "Move Camera",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = cameraTurnRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(330, 16),
+	BackgroundTransparency = 1,
+	Text = "Can be used for recording videos",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+cameraTurnToggle = New("TextButton", {
+	Parent = cameraTurnRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(cameraTurnToggle, 12)
+Stroke(cameraTurnToggle, COLORS.Border, 0.3, 1)
+
+cameraTurnKnob = New("Frame", {
+	Parent = cameraTurnToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+Corner(cameraTurnKnob, 9)
+
+cameraTurnSettingsBtn = New("TextButton", {
+	Parent = cameraTurnRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(cameraTurnSettingsBtn, 7)
+
+function setCameraTurn(state)
+	Features.cameraTurnEnabled = state
+	if state then
+		Tween(cameraTurnToggle, 0.2, {BackgroundColor3 = COLORS.Accent})
+		Tween(cameraTurnKnob, 0.2, {
+			Position = UDim2.fromOffset(24, 3),
+			BackgroundColor3 = Color3.new(1, 1, 1)
+		})
+	else
+		Tween(cameraTurnToggle, 0.2, {BackgroundColor3 = COLORS.Panel2})
+		Tween(cameraTurnKnob, 0.2, {
+			Position = UDim2.fromOffset(3, 3),
+			BackgroundColor3 = COLORS.SubText
+		})
+	end
+end
+cameraTurnToggle.MouseButton1Click:Connect(function()
+	setCameraTurn(not Features.cameraTurnEnabled)
+end)
+
+cameraTurnPopup = New("Frame", {
+	Name = "CameraTurnPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 70,
+})
+Corner(cameraTurnPopup, 14)
+Stroke(cameraTurnPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(22, 16),
+	Size = UDim2.fromOffset(260, 25),
+	BackgroundTransparency = 1,
+	Text = "Move Camera Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 71,
+})
+
+cameraTurnClose = New("TextButton", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.new(1, -42, 0, 14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 17,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 72,
+})
+Corner(cameraTurnClose, 7)
+
+New("TextLabel", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(22, 49),
+	Size = UDim2.fromOffset(350, 22),
+	BackgroundTransparency = 1,
+	Text = "Bind a key for the camera movement.",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 71,
+})
+
+New("TextLabel", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(22, 88),
+	Size = UDim2.fromOffset(100, 25),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 71,
+})
+
+cameraTurnBindBtn = New("TextButton", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(150, 84),
+	Size = UDim2.fromOffset(135, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.cameraTurnKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 71,
+})
+Corner(cameraTurnBindBtn, 8)
+
+cameraTurnDeleteBtn = New("TextButton", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(291, 84),
+	Size = UDim2.fromOffset(32, 32),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 71,
+})
+Corner(cameraTurnDeleteBtn, 8)
+
+New("TextLabel", {
+	Parent = cameraTurnPopup,
+	Position = UDim2.fromOffset(22, 128),
+	Size = UDim2.fromOffset(330, 22),
+	BackgroundTransparency = 1,
+	Text = "Useful for quick camera movement while recording.",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 71,
+})
+
+cameraTurnSettingsBtn.MouseButton1Click:Connect(function()
+	if cameraTurnPopup.Visible then
+		Tween(cameraTurnPopup, 0.2, {Size = UDim2.fromOffset(0, 0)})
+		task.delay(0.2, function() cameraTurnPopup.Visible = false end)
+	else
+		cameraTurnPopup.Visible = true
+		Tween(cameraTurnPopup, 0.25, {Size = UDim2.fromOffset(345, 170)}, Enum.EasingStyle.Back)
+	end
+end)
+
+cameraTurnClose.MouseButton1Click:Connect(function()
+	Tween(cameraTurnPopup, 0.2, {Size = UDim2.fromOffset(0, 0)})
+	task.delay(0.2, function() cameraTurnPopup.Visible = false end)
+end)
+
+cameraTurnBindBtn.MouseButton1Click:Connect(function()
+	State.waitingForCameraTurnKey = true
+	cameraTurnBindBtn.Text = "Press key..."
+end)
+
+cameraTurnDeleteBtn.MouseButton1Click:Connect(function()
+	Keys.cameraTurnKey = Enum.KeyCode.Unknown
+	State.waitingForCameraTurnKey = false
+	cameraTurnBindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+--// =========================================================
+--// ORIGINAL CAMERA TURN CODE
+--// =========================================================
+
+function startCameraTurn()
+	local camera = workspace.CurrentCamera
+	if not camera then return end
+
+	local ACTIVATION_KEY = Enum.UserInputType.MouseButton1
+	local TURN_DURATION = 0.15
+	local TURN_STRENGTH = 180
+
+	local isTurning = false
+	local turnProgress = 0
+	local startCFrame = nil
+	local targetCFrame = nil
+
+	local function getHumanizedOffset(progress)
+		local smoothProgress = progress * progress * (3 - 2 * progress)
+		local shakeX = math.sin(progress * math.pi * 30) * 0.3 * (1 - progress)
+		local shakeY = math.cos(progress * math.pi * 25 + 1.2) * 0.3 * (1 - progress)
+		local arcY = math.sin(progress * math.pi) * 1.5
+		return smoothProgress, shakeX, shakeY, arcY
+	end
+
+	local function startTurn()
+		if isTurning then return end
+		if not camera then return end
+
+		local randomSign = (math.random(1, 2) == 1 and 1) or -1
+		local randomStrength = TURN_STRENGTH * randomSign * (0.85 + math.random() * 0.3)
+		local currentLookVector = camera.CFrame.LookVector
+		local currentUpVector = camera.CFrame.UpVector
+		local yaw = math.rad(randomStrength)
+		local pitch = math.rad(math.random(-5, 5) * 0.5)
+		local rotationY = CFrame.Angles(0, yaw, 0)
+		local rotationX = CFrame.Angles(pitch, 0, 0)
+		local totalRotation = rotationX * rotationY
+		local currentPos = camera.CFrame.Position
+		local newCFrame = CFrame.new(currentPos) * (camera.CFrame.Rotation * totalRotation)
+		targetCFrame = CFrame.new(currentPos, newCFrame.LookVector + currentPos)
+		startCFrame = camera.CFrame
+		turnProgress = 0
+		isTurning = true
+	end
+
+	startTurn()
+
+	local connection
+	connection = RunService.RenderStepped:Connect(function(deltaTime)
+		if not isTurning or not camera then
+			if connection then connection:Disconnect() end
+			if isTurning then isTurning = false end
+			return
+		end
+
+		turnProgress = turnProgress + (deltaTime / TURN_DURATION)
+
+		if turnProgress >= 1 then
+			turnProgress = 1
+			if targetCFrame then
+				camera.CFrame = targetCFrame
+			end
+			isTurning = false
+			connection:Disconnect()
+			return
+		end
+
+		local smoothP, shakeX, shakeY, arcY = getHumanizedOffset(turnProgress)
+		local startPos = startCFrame.Position
+		local startLook = startCFrame.LookVector
+		local startUp = startCFrame.UpVector
+		local startRight = startCFrame.RightVector
+		local targetLook = targetCFrame.LookVector
+		local targetUp = targetCFrame.UpVector
+		local currentLook = startLook:Lerp(targetLook, smoothP)
+		local currentUp = startUp:Lerp(targetUp, smoothP)
+		currentLook = currentLook.Unit
+		currentUp = currentUp.Unit
+		local shakeRight = startRight * math.rad(shakeX)
+		local shakeUp = startUp * math.rad(shakeY)
+		local shakeOffset = shakeRight + shakeUp
+		local arcOffset = startUp * math.rad(arcY * 0.8)
+		local noisyLook = (currentLook + shakeOffset + arcOffset).Unit
+		local newCFrame = CFrame.lookAt(startPos, startPos + noisyLook, currentUp)
+		camera.CFrame = newCFrame
+	end)
+end
+
+--// =========================================================
+--// VISUALS: ESP SIDE PANEL
+--// =========================================================
+
+espSidePanel = New("Frame", {
+	Name = "ESPSidePanel",
+	Parent = main,
+	Position = UDim2.new(1, 10, 0, 0),
+	Size = UDim2.fromOffset(240, 500),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 6,
+})
+
+Corner(espSidePanel, 18)
+Stroke(espSidePanel, COLORS.Border, 0.15, 1)
+
+New("TextLabel", {
+	Parent = espSidePanel,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 25),
+	BackgroundTransparency = 1,
+	Text = "ESP Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 16,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 7,
+})
+
+espScroll = New("ScrollingFrame", {
+	Parent = espSidePanel,
+	Position = UDim2.fromOffset(10, 45),
+	Size = UDim2.new(1, -20, 1, -55),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = COLORS.SubText,
+	ZIndex = 7,
+})
+
+espListLayout = New("UIListLayout", {
+	Parent = espScroll,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 6)
+})
+
+espBindRow = New("Frame", {
+	Parent = espScroll,
+	Size = UDim2.new(1, -8, 0, 36),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	ZIndex = 7,
+	LayoutOrder = 0,
+})
+Corner(espBindRow, 8)
+
+New("TextLabel", {
+	Parent = espBindRow,
+	Position = UDim2.fromOffset(10, 0),
+	Size = UDim2.fromOffset(100, 36),
+	BackgroundTransparency = 1,
+	Text = "ESP Keybind",
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 8,
+})
+
+espRebindBtn = New("TextButton", {
+	Parent = espBindRow,
+	Position = UDim2.new(1, -95, 0.5, -12),
+	Size = UDim2.fromOffset(85, 24),
+	BackgroundColor3 = COLORS.Background,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.espKey),
+	TextColor3 = COLORS.Accent,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 8,
+})
+Corner(espRebindBtn, 6)
+
+espDeleteBindBtn = New("TextButton", {
+	Parent = espBindRow,
+	Position = UDim2.new(1, -12, 0.5, -12),
+	Size = UDim2.fromOffset(12, 24),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 8,
+})
+Corner(espDeleteBindBtn, 6)
+
+espDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.espKey = Enum.KeyCode.Unknown
+	espRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+espRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForEspKey = true
+	espRebindBtn.Text = "Press..."
+end)
+
+function makeEspOption(name, key, order)
+	local row = New("Frame", {
+		Parent = espScroll,
+		Size = UDim2.new(1, -8, 0, 32),
+		BackgroundColor3 = COLORS.Panel2,
+		BorderSizePixel = 0,
+		ZIndex = 7,
+		LayoutOrder = order or 1,
+	})
+	Corner(row, 8)
+
+	New("TextLabel", {
+		Parent = row,
+		Position = UDim2.fromOffset(10, 0),
+		Size = UDim2.fromOffset(140, 32),
+		BackgroundTransparency = 1,
+		Text = name,
+		TextColor3 = COLORS.Text,
+		TextSize = 10,
+		Font = Enum.Font.GothamMedium,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 8,
+	})
+
+	local toggle = New("TextButton", {
+		Parent = row,
+		Position = UDim2.new(1, -42, 0.5, -9),
+		Size = UDim2.fromOffset(32, 18),
+		BackgroundColor3 = espSettings[key] and COLORS.Accent or COLORS.Background,
+		BorderSizePixel = 0,
+		Text = "",
+		AutoButtonColor = false,
+		ZIndex = 8,
+	})
+	Corner(toggle, 9)
+
+	local knob = New("Frame", {
+		Parent = toggle,
+		Position = espSettings[key] and UDim2.fromOffset(16, 2) or UDim2.fromOffset(2, 2),
+		Size = UDim2.fromOffset(14, 14),
+		BackgroundColor3 = Color3.new(1, 1, 1),
+		BorderSizePixel = 0,
+		ZIndex = 9,
+	})
+	Corner(knob, 7)
+
+	toggle.MouseButton1Click:Connect(function()
+		espSettings[key] = not espSettings[key]
+		if espSettings[key] then
+			Tween(toggle, 0.15, { BackgroundColor3 = COLORS.Accent })
+			Tween(knob, 0.15, { Position = UDim2.fromOffset(16, 2) })
+		else
+			Tween(toggle, 0.15, { BackgroundColor3 = COLORS.Background })
+			Tween(knob, 0.15, { Position = UDim2.fromOffset(2, 2) })
+		end
+		updatePreview()
+	end)
+end
+
+makeEspOption("Chams", "Chams", 1)
+makeEspOption("Boxes (2D)", "Boxes", 2)
+makeEspOption("Tracers", "Tracers", 3)
+makeEspOption("Skeleton", "Skeleton", 4)
+makeEspOption("Look Vector", "LookVector", 5)
+makeEspOption("Health Bar", "HealthBar", 6)
+makeEspOption("Show Distance", "ShowDistance", 7)
+makeEspOption("Past Distance (4s)", "PastDistance4s", 8)
+makeEspOption("Show Name", "ShowName", 9)
+makeEspOption("Show Held Tool", "ShowHeldTool", 10)
+makeEspOption("Offscreen Arrow", "OffscreenArrow", 11)
+
+--// =========================================================
+--// VISUAL PAGE - ESP ROW
+--// =========================================================
+
+espRow = New("Frame", {
+	Name = "ESPRow",
+	Parent = visualPage,
+	Position = UDim2.fromOffset(36, 110),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(espRow, 10)
+Stroke(espRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = espRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Player ESP",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = espRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Renders overlays through obstacles",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+espToggle = New("TextButton", {
+	Parent = espRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(espToggle, 12)
+Stroke(espToggle, COLORS.Border, 0.3, 1)
+
+espKnob = New("Frame", {
+	Parent = espToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(espKnob, 9)
+
+espSettingsBtn = New("TextButton", {
+	Parent = espRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(espSettingsBtn, 7)
+
+function setESP(state)
+	Features.espEnabled = state
+	if Features.espEnabled then
+		Tween(espToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(espKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+	else
+		Tween(espToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(espKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+	end
+end
+
+espToggle.MouseButton1Click:Connect(function() setESP(not Features.espEnabled) end)
+
+espSettingsBtn.MouseButton1Click:Connect(function()
+	State.espSidePanelOpen = not State.espSidePanelOpen
+	espSidePanel.Visible = State.espSidePanelOpen
+	espPreviewWindow.Visible = State.espSidePanelOpen
+	if State.espSidePanelOpen then
+		updatePreview()
+	end
+end)
+
+--// =========================================================
+--// SKY MODE ROW
+--// =========================================================
+
+skyRow = New("Frame", {
+	Name = "SkyRow",
+	Parent = visualPage,
+	Position = UDim2.fromOffset(36, 170),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(skyRow, 10)
+Stroke(skyRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = skyRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Sky Mode",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = skyRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Rainbow / Red / Blue sky effect",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+skyToggle = New("TextButton", {
+	Parent = skyRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(skyToggle, 12)
+Stroke(skyToggle, COLORS.Border, 0.3, 1)
+
+skyKnob = New("Frame", {
+	Parent = skyToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(skyKnob, 9)
+
+skySettingsBtn = New("TextButton", {
+	Parent = skyRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(skySettingsBtn, 7)
+
+function setSky(state)
+	Features.skyEnabled = state
+	if Features.skyEnabled then
+		Tween(skyToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(skyKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+		startSkyMode()
+	else
+		Tween(skyToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(skyKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+		stopSkyMode()
+	end
+end
+
+skyToggle.MouseButton1Click:Connect(function() setSky(not Features.skyEnabled) end)
+
+function applySkyColor(color)
+	Lighting.OutdoorAmbient = color
+	Lighting.Ambient = color
+	Lighting.FogColor = color
+	Lighting.FogStart = 0
+	Lighting.FogEnd = 2000
+	if skyAtmosphere then
+		skyAtmosphere.Color = color
+	end
+end
+
+function startSkyMode()
+	for _, v in pairs(Lighting:GetChildren()) do
+		if v:IsA("Sky") then
+			v:Destroy()
+		end
+	end
+
+	skyAtmosphere = Lighting:FindFirstChildOfClass("Atmosphere")
+	if not skyAtmosphere then
+		skyAtmosphere = Instance.new("Atmosphere")
+		skyAtmosphere.Parent = Lighting
+	end
+	skyAtmosphere.Density = 0.6
+	skyAtmosphere.Haze = 10
+	skyAtmosphere.Glare = 10
+	skyAtmosphere.Decay = Color3.fromRGB(0, 0, 0)
+
+	if Features.skyMode == "Rainbow" then
+		skyConnection = RunService.RenderStepped:Connect(function()
+			local hue = (tick() % 2) / 2
+			local rainbowColor = Color3.fromHSV(hue, 1, 1)
+			applySkyColor(rainbowColor)
+		end)
+	elseif Features.skyMode == "Red" then
+		applySkyColor(Color3.fromRGB(255, 0, 0))
+	elseif Features.skyMode == "Blue" then
+		applySkyColor(Color3.fromRGB(0, 150, 255))
+	end
+end
+
+function stopSkyMode()
+	if skyConnection then
+		skyConnection:Disconnect()
+		skyConnection = nil
+	end
+	Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
+	Lighting.Ambient = Color3.fromRGB(0, 0, 0)
+	Lighting.FogColor = Color3.fromRGB(0, 0, 0)
+	Lighting.FogStart = 0
+	Lighting.FogEnd = 100000
+	if skyAtmosphere then
+		skyAtmosphere.Color = Color3.fromRGB(0, 0, 0)
+	end
+end
+
+skyPopup = New("Frame", {
+	Name = "SkyPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(skyPopup, 14)
+Stroke(skyPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = skyPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Sky Mode Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeSky = New("TextButton", {
+	Parent = skyPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeSky, 6)
+
+New("TextLabel", {
+	Parent = skyPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+skyRebindBtn = New("TextButton", {
+	Parent = skyPopup,
+	Position = UDim2.new(1, -120, 0, 45),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.skyKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(skyRebindBtn, 6)
+
+skyDeleteBindBtn = New("TextButton", {
+	Parent = skyPopup,
+	Position = UDim2.new(1, -12, 0, 45),
+	Size = UDim2.fromOffset(12, 26),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(skyDeleteBindBtn, 6)
+
+skyDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.skyKey = Enum.KeyCode.Unknown
+	skyRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+New("TextLabel", {
+	Parent = skyPopup,
+	Position = UDim2.fromOffset(20, 85),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Mode",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+skyModeBtn = New("TextButton", {
+	Parent = skyPopup,
+	Position = UDim2.new(1, -120, 0, 82),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = Features.skyMode,
+	TextColor3 = COLORS.Accent,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(skyModeBtn, 6)
+
+skyModeBtn.MouseButton1Click:Connect(function()
+	if Features.skyMode == "Rainbow" then
+		Features.skyMode = "Red"
+	elseif Features.skyMode == "Red" then
+		Features.skyMode = "Blue"
+	else
+		Features.skyMode = "Rainbow"
+	end
+	skyModeBtn.Text = Features.skyMode
+	if Features.skyEnabled then
+		stopSkyMode()
+		startSkyMode()
+	end
+end)
+
+skySettingsBtn.MouseButton1Click:Connect(function()
+	State.skySettingsOpen = not State.skySettingsOpen
+	if State.skySettingsOpen then
+		skyPopup.Visible = true
+		Tween(skyPopup, 0.25, { Size = UDim2.fromOffset(260, 125) }, Enum.EasingStyle.Back)
+	else
+		Tween(skyPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() skyPopup.Visible = false end)
+	end
+end)
+
+closeSky.MouseButton1Click:Connect(function()
+	State.skySettingsOpen = false
+	Tween(skyPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() skyPopup.Visible = false end)
+end)
+
+skyRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForSkyKey = true
+	skyRebindBtn.Text = "Press key..."
+end)
+
+--// =========================================================
+--// STRETCH ROW
+--// =========================================================
+
+stretchRow = New("Frame", {
+	Name = "StretchRow",
+	Parent = visualPage,
+	Position = UDim2.fromOffset(36, 230),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+
+Corner(stretchRow, 10)
+Stroke(stretchRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = stretchRow,
+	Position = UDim2.fromOffset(16, 8),
+	Size = UDim2.fromOffset(200, 18),
+	BackgroundTransparency = 1,
+	Text = "Stretch",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+New("TextLabel", {
+	Parent = stretchRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(250, 16),
+	BackgroundTransparency = 1,
+	Text = "Stretches the camera view",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+stretchToggle = New("TextButton", {
+	Parent = stretchRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(stretchToggle, 12)
+Stroke(stretchToggle, COLORS.Border, 0.3, 1)
+
+stretchKnob = New("Frame", {
+	Parent = stretchToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+
+Corner(stretchKnob, 9)
+
+stretchSettingsBtn = New("TextButton", {
+	Parent = stretchRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(stretchSettingsBtn, 7)
+
+function setStretch(state)
+	Features.stretchEnabled = state
+	if Features.stretchEnabled then
+		Tween(stretchToggle, 0.2, { BackgroundColor3 = COLORS.Accent })
+		Tween(stretchKnob, 0.2, { Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1) })
+		startStretch()
+	else
+		Tween(stretchToggle, 0.2, { BackgroundColor3 = COLORS.Panel2 })
+		Tween(stretchKnob, 0.2, { Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText })
+		stopStretch()
+	end
+end
+
+stretchToggle.MouseButton1Click:Connect(function() setStretch(not Features.stretchEnabled) end)
+
+function startStretch()
+	getgenv().Resolution = {
+		[".gg/scripters"] = 0.65
+	}
+	if getgenv().gg_scripters == nil then
+		stretchConnection = RunService.RenderStepped:Connect(function()
+			camera.CFrame = camera.CFrame * CFrame.new(0, 0, 0, 1, 0, 0, 0, getgenv().Resolution[".gg/scripters"], 0, 0, 0, 1)
+		end)
+	end
+	getgenv().gg_scripters = "GGCASHERS"
+end
+
+function stopStretch()
+	if stretchConnection then
+		stretchConnection:Disconnect()
+		stretchConnection = nil
+	end
+	getgenv().Resolution = nil
+	getgenv().gg_scripters = nil
+end
+
+stretchPopup = New("Frame", {
+	Name = "StretchPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 60,
+})
+
+Corner(stretchPopup, 14)
+Stroke(stretchPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = stretchPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(200, 20),
+	BackgroundTransparency = 1,
+	Text = "Stretch Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+closeStretch = New("TextButton", {
+	Parent = stretchPopup,
+	Position = UDim2.new(1, -35, 0, 12),
+	Size = UDim2.fromOffset(22, 22),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 61,
+})
+Corner(closeStretch, 6)
+
+New("TextLabel", {
+	Parent = stretchPopup,
+	Position = UDim2.fromOffset(20, 48),
+	Size = UDim2.fromOffset(100, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybind",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 61,
+})
+
+stretchRebindBtn = New("TextButton", {
+	Parent = stretchPopup,
+	Position = UDim2.new(1, -120, 0, 45),
+	Size = UDim2.fromOffset(100, 26),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.stretchKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(stretchRebindBtn, 6)
+
+stretchDeleteBindBtn = New("TextButton", {
+	Parent = stretchPopup,
+	Position = UDim2.new(1, -12, 0, 45),
+	Size = UDim2.fromOffset(12, 26),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "✕",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 61,
+})
+Corner(stretchDeleteBindBtn, 6)
+
+stretchDeleteBindBtn.MouseButton1Click:Connect(function()
+	Keys.stretchKey = Enum.KeyCode.Unknown
+	stretchRebindBtn.Text = "None"
+	updateKeybindsList()
+end)
+
+stretchSettingsBtn.MouseButton1Click:Connect(function()
+	State.stretchSettingsOpen = not State.stretchSettingsOpen
+	if State.stretchSettingsOpen then
+		stretchPopup.Visible = true
+		Tween(stretchPopup, 0.25, { Size = UDim2.fromOffset(260, 95) }, Enum.EasingStyle.Back)
+	else
+		Tween(stretchPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function() stretchPopup.Visible = false end)
+	end
+end)
+
+closeStretch.MouseButton1Click:Connect(function()
+	State.stretchSettingsOpen = false
+	Tween(stretchPopup, 0.2, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.2, function() stretchPopup.Visible = false end)
+end)
+
+stretchRebindBtn.MouseButton1Click:Connect(function()
+	State.waitingForStretchKey = true
+	stretchRebindBtn.Text = "Press key..."
+end)
+
+--// =========================================================
+--// ESP RENDERING ENGINE
+--// =========================================================
+
+function createESPForPlayer(plr)
+	if plr == player then return end
+
+	local box = New("Frame", {
+		Parent = espLayer,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		Visible = false
+	})
+	Stroke(box, COLORS.Accent, 0, 1.5)
+
+	local tracer = New("Frame", {
+		Parent = espLayer,
+		BackgroundColor3 = COLORS.Accent,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Visible = false
+	})
+
+	local nameTag = New("TextLabel", {
+		Parent = espLayer,
+		BackgroundTransparency = 1,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextSize = 11,
+		Font = Enum.Font.GothamBold,
+		Visible = false,
+		TextStrokeTransparency = 0.3
+	})
+
+	local toolTag = New("TextLabel", {
+		Parent = espLayer,
+		BackgroundTransparency = 1,
+		TextColor3 = COLORS.SubText,
+		TextSize = 9,
+		Font = Enum.Font.GothamMedium,
+		Visible = false,
+		TextStrokeTransparency = 0.3
+	})
+
+	local hpBg = New("Frame", {
+		Parent = espLayer,
+		BackgroundColor3 = Color3.fromRGB(20, 20, 20),
+		BorderSizePixel = 0,
+		Visible = false
+	})
+
+	local hpBar = New("Frame", {
+		Parent = hpBg,
+		BackgroundColor3 = Color3.fromRGB(50, 220, 50),
+		BorderSizePixel = 0,
+		Size = UDim2.fromScale(1, 1)
+	})
+
+	espDrawings[plr] = {
+		box = box,
+		tracer = tracer,
+		nameTag = nameTag,
+		toolTag = toolTag,
+		hpBg = hpBg,
+		hpBar = hpBar
+	}
+end
+
+function removeESP(plr)
+	if espDrawings[plr] then
+		for _, v in pairs(espDrawings[plr]) do
+			safeDestroy(v)
+		end
+		espDrawings[plr] = nil
+	end
+end
+
+for _, p in ipairs(Players:GetPlayers()) do createESPForPlayer(p) end
+Players.PlayerAdded:Connect(createESPForPlayer)
+Players.PlayerRemoving:Connect(removeESP)
+
+RunService.RenderStepped:Connect(function()
+	for plr, draw in pairs(espDrawings) do
+		local char = plr.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local root = char and char:FindFirstChild("HumanoidRootPart")
+
+		if Features.espEnabled and char and hum and root and hum.Health > 0 then
+			local rootPos, onScreen = camera:WorldToViewportPoint(root.Position)
+			if onScreen then
+				local head = char:FindFirstChild("Head")
+				local headPos = head and camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0)) or rootPos
+
+				local sizeY = math.abs(headPos.Y - rootPos.Y) * 2
+				sizeY = math.clamp(sizeY, 15, 500)
+				local sizeX = sizeY * 0.65
+
+				if espSettings.Boxes then
+					draw.box.Size = UDim2.fromOffset(sizeX, sizeY)
+					draw.box.Position = UDim2.fromOffset(rootPos.X - sizeX/2, rootPos.Y - sizeY/2)
+					draw.box.Visible = true
+				else
+					draw.box.Visible = false
+				end
+
+				if espSettings.Tracers then
+					local origin = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+					local target = Vector2.new(rootPos.X, rootPos.Y)
+					local dist = (target - origin).Magnitude
+
+					draw.tracer.Size = UDim2.fromOffset(1.5, dist)
+					draw.tracer.Position = UDim2.fromOffset((origin.X + target.X)/2, (origin.Y + target.Y)/2)
+					draw.tracer.Rotation = math.deg(math.atan2(target.Y - origin.Y, target.X - origin.X)) - 90
+					draw.tracer.Visible = true
+				else
+					draw.tracer.Visible = false
+				end
+
+				if espSettings.ShowName then
+					local text = plr.Name
+					if espSettings.ShowDistance then
+						local distMeters = math.floor((player.Character and player.Character:FindFirstChild("HumanoidRootPart") and (player.Character.HumanoidRootPart.Position - root.Position).Magnitude) or 0)
+						text = text .. " [" .. distMeters .. "m]"
+					end
+					draw.nameTag.Text = text
+					draw.nameTag.Position = UDim2.fromOffset(rootPos.X - 100, rootPos.Y - sizeY/2 - 18)
+					draw.nameTag.Size = UDim2.fromOffset(200, 15)
+					draw.nameTag.Visible = true
+				else
+					draw.nameTag.Visible = false
+				end
+
+				if espSettings.ShowHeldTool then
+					local tool = char:FindFirstChildOfClass("Tool")
+					draw.toolTag.Text = tool and tool.Name or "None"
+					draw.toolTag.Position = UDim2.fromOffset(rootPos.X - 100, rootPos.Y + sizeY/2 + 2)
+					draw.toolTag.Size = UDim2.fromOffset(200, 15)
+					draw.toolTag.Visible = true
+				else
+					draw.toolTag.Visible = false
+				end
+
+				if espSettings.HealthBar then
+					local healthPercent = math.clamp(hum.Health / hum.MaxHealth, 0, 1)
+					draw.hpBg.Size = UDim2.fromOffset(3, sizeY)
+					draw.hpBg.Position = UDim2.fromOffset(rootPos.X - sizeX/2 - 6, rootPos.Y - sizeY/2)
+					draw.hpBar.Size = UDim2.new(1, 0, healthPercent, 0)
+					draw.hpBar.Position = UDim2.new(0, 0, 1 - healthPercent, 0)
+					draw.hpBar.BackgroundColor3 = Color3.fromRGB(255 - (255 * healthPercent), 255 * healthPercent, 0)
+					draw.hpBg.Visible = true
+				else
+					draw.hpBg.Visible = false
+				end
+
+			else
+				draw.box.Visible = false
+				draw.tracer.Visible = false
+				draw.nameTag.Visible = false
+				draw.toolTag.Visible = false
+				draw.hpBg.Visible = false
+			end
+		else
+			draw.box.Visible = false
+			draw.tracer.Visible = false
+			draw.nameTag.Visible = false
+			draw.toolTag.Visible = false
+			draw.hpBg.Visible = false
+		end
+	end
+end)
+
+--// =========================================================
+--// SKINS PAGE
+--// =========================================================
+
+skinsNotice = New("TextLabel", {
+	Parent = skinsPage,
+	Position = UDim2.fromOffset(36, 110),
+	Size = UDim2.fromOffset(400, 30),
+	BackgroundTransparency = 1,
+	Text = "Skin changer options will appear here.",
+	TextColor3 = COLORS.SubText,
+	TextSize = 13,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+--// =========================================================
+--// SETTINGS POPUP
+--// =========================================================
+
+settingsButton = New("TextButton", {
+	Name = "SettingsButton",
+	Parent = sidebar,
+	Position = UDim2.fromOffset(15, 405),
+	Size = UDim2.fromOffset(160, 43),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+
+Corner(settingsButton, 10)
+
+settingsIcon = New("TextLabel", {
+	Parent = settingsButton,
+	Position = UDim2.fromOffset(17, 0),
+	Size = UDim2.fromOffset(25, 43),
+	BackgroundTransparency = 1,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 16,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 10,
+})
+
+settingsText = New("TextLabel", {
+	Parent = settingsButton,
+	Position = UDim2.fromOffset(52, 0),
+	Size = UDim2.fromOffset(95, 43),
+	BackgroundTransparency = 1,
+	Text = "Settings",
+	TextColor3 = COLORS.SubText,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 10,
+})
+
+settingsButton.MouseEnter:Connect(function()
+	Tween(settingsButton, 0.15, { BackgroundColor3 = COLORS.PanelHover })
+	Tween(settingsIcon, 0.15, { TextColor3 = COLORS.Text })
+	Tween(settingsText, 0.15, { TextColor3 = COLORS.Text })
+end)
+
+settingsButton.MouseLeave:Connect(function()
+	Tween(settingsButton, 0.15, { BackgroundColor3 = COLORS.Panel })
+	Tween(settingsIcon, 0.15, { TextColor3 = COLORS.SubText })
+	Tween(settingsText, 0.15, { TextColor3 = COLORS.SubText })
+end)
+
+settingsPopup = New("Frame", {
+	Name = "SettingsPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 50,
+})
+
+Corner(settingsPopup, 16)
+Stroke(settingsPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 20),
+	Size = UDim2.fromOffset(300, 28),
+	BackgroundTransparency = 1,
+	Text = "Settings",
+	TextColor3 = COLORS.Text,
+	TextSize = 18,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+closeSettings = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -50, 0, 20),
+	Size = UDim2.fromOffset(30, 30),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "×",
+	TextColor3 = COLORS.SubText,
+	TextSize = 18,
+	Font = Enum.Font.GothamBold,
+	ZIndex = 52,
+})
+
+Corner(closeSettings, 8)
+
+New("Frame", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 65),
+	Size = UDim2.new(1, -50, 0, 1),
+	BackgroundColor3 = COLORS.Border,
+	BackgroundTransparency = 0.5,
+	BorderSizePixel = 0,
+	ZIndex = 52,
+})
+
+-- Open Menu Key
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 80),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Open menu key",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+rebindButton = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 75),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = keyName(Keys.openKey),
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(rebindButton, 8)
+rebindButton.MouseButton1Click:Connect(function()
+	State.waitingForKey = true
+	rebindButton.Text = "Press a key..."
+end)
+
+-- Keybind Overlay Toggle
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 125),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Show keybinds overlay",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+toggleKbOverlayBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 120),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "OFF",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(toggleKbOverlayBtn, 8)
+toggleKbOverlayBtn.MouseButton1Click:Connect(function()
+	State.keybindsOverlayVisible = not State.keybindsOverlayVisible
+	keybindsFrame.Visible = State.keybindsOverlayVisible
+	toggleKbOverlayBtn.Text = State.keybindsOverlayVisible and "ON" or "OFF"
+	toggleKbOverlayBtn.TextColor3 = State.keybindsOverlayVisible and COLORS.Text or COLORS.SubText
+end)
+
+-- Theme Selector
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 170),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Menu theme color",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+themeMenuBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 165),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "Select Theme",
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(themeMenuBtn, 8)
+
+-- Startup Load
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 215),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Load on startup",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+loadButton = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 210),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "OFF",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(loadButton, 8)
+loadButton.MouseButton1Click:Connect(function()
+	Features.openOnLoad = not Features.openOnLoad
+	loadButton.Text = Features.openOnLoad and "ON" or "OFF"
+	loadButton.TextColor3 = Features.openOnLoad and COLORS.Text or COLORS.SubText
+end)
+
+-- Anti Fling Button
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 260),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Anti Fling",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+antiFlingBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 255),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "OFF",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(antiFlingBtn, 8)
+antiFlingBtn.MouseButton1Click:Connect(function()
+	Features.antiFlingEnabled = not Features.antiFlingEnabled
+	antiFlingBtn.Text = Features.antiFlingEnabled and "ON" or "OFF"
+	antiFlingBtn.TextColor3 = Features.antiFlingEnabled and COLORS.Text or COLORS.SubText
+	if Features.antiFlingEnabled then
+		startAntiFling()
+	else
+		stopAntiFling()
+	end
+end)
+
+-- Anti AFK Button
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 305),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Anti AFK",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+antiAFKBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 300),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "OFF",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(antiAFKBtn, 8)
+antiAFKBtn.MouseButton1Click:Connect(function()
+	Features.antiAFKEnabled = not Features.antiAFKEnabled
+	antiAFKBtn.Text = Features.antiAFKEnabled and "ON" or "OFF"
+	antiAFKBtn.TextColor3 = Features.antiAFKEnabled and COLORS.Text or COLORS.SubText
+	if Features.antiAFKEnabled then
+		startAntiAFK()
+	else
+		stopAntiAFK()
+	end
+end)
+
+-- Rainbow Cursor Button
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 350),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Rainbow Cursor",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+rainbowCursorBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 345),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "OFF",
+	TextColor3 = COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+
+Corner(rainbowCursorBtn, 8)
+rainbowCursorBtn.MouseButton1Click:Connect(function()
+	local state = not Features.rainbowCursorEnabled
+	toggleRainbowCursor(state)
+	rainbowCursorBtn.Text = state and "ON" or "OFF"
+	rainbowCursorBtn.TextColor3 = state and COLORS.Text or COLORS.SubText
+end)
+
+--// =========================================================
+--// CONFIGS
+--// =========================================================
+
+configSaveBtn = New("TextButton", {
+	Name = "SaveConfigButton",
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 390),
+	Size = UDim2.fromOffset(125, 34),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "SAVE CONFIG",
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+Corner(configSaveBtn, 9)
+
+configLoadBtn = New("TextButton", {
+	Name = "LoadConfigButton",
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(160, 390),
+	Size = UDim2.fromOffset(125, 34),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "LOAD CONFIG",
+	TextColor3 = COLORS.Text,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+Corner(configLoadBtn, 9)
+
+configFolderLabel = New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(295, 390),
+	Size = UDim2.fromOffset(135, 34),
+	BackgroundTransparency = 1,
+	Text = "Folder: " .. CONFIG_FOLDER,
+	TextColor3 = COLORS.SubText,
+	TextSize = 9,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	TextYAlignment = Enum.TextYAlignment.Center,
+	TextWrapped = true,
+	ZIndex = 53,
+})
+
+configNamePopup = New("Frame", {
+	Name = "ConfigNamePopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 90,
+})
+Corner(configNamePopup, 14)
+Stroke(configNamePopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = configNamePopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(220, 24),
+	BackgroundTransparency = 1,
+	Text = "Save Config",
+	TextColor3 = COLORS.Text,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 91,
+})
+
+configNameBox = New("TextBox", {
+	Parent = configNamePopup,
+	Position = UDim2.fromOffset(20, 52),
+	Size = UDim2.fromOffset(260, 34),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	PlaceholderText = "Config name...",
+	PlaceholderColor3 = COLORS.Muted,
+	TextColor3 = COLORS.Text,
+	TextSize = 11,
+	Font = Enum.Font.GothamMedium,
+	ClearTextOnFocus = false,
+	ZIndex = 91,
+})
+Corner(configNameBox, 8)
+
+configNameSave = New("TextButton", {
+	Parent = configNamePopup,
+	Position = UDim2.fromOffset(20, 98),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Accent,
+	BorderSizePixel = 0,
+	Text = "SAVE",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 91,
+})
+Corner(configNameSave, 8)
+
+table.insert(themeObjects, configNameSave)
+
+configNameCancel = New("TextButton", {
+	Parent = configNamePopup,
+	Position = UDim2.fromOffset(155, 98),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "CANCEL",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 91,
+})
+Corner(configNameCancel, 8)
+
+configListPopup = New("Frame", {
+	Name = "ConfigListPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 90,
+})
+Corner(configListPopup, 14)
+Stroke(configListPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {
+	Parent = configListPopup,
+	Position = UDim2.fromOffset(20, 15),
+	Size = UDim2.fromOffset(250, 24),
+	BackgroundTransparency = 1,
+	Text = "Load Config",
+	TextColor3 = COLORS.Text,
+	TextSize = 15,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 91,
+})
+
+configListScroll = New("ScrollingFrame", {
+	Parent = configListPopup,
+	Position = UDim2.fromOffset(15, 48),
+	Size = UDim2.fromOffset(310, 220),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	ScrollBarThickness = 4,
+	ScrollBarImageColor3 = COLORS.SubText,
+	CanvasSize = UDim2.fromOffset(0, 0),
+	ZIndex = 91,
+})
+
+configListLayout = New("UIListLayout", {
+	Parent = configListScroll,
+	SortOrder = Enum.SortOrder.LayoutOrder,
+	Padding = UDim.new(0, 6),
+})
+
+configListClose = New("TextButton", {
+	Parent = configListPopup,
+	Position = UDim2.fromOffset(15, 278),
+	Size = UDim2.fromOffset(310, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "CLOSE",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 91,
+})
+Corner(configListClose, 8)
+
+function closeConfigNamePopup()
+	State.configNamePopupOpen = false
+	Tween(configNamePopup, 0.2, {Size = UDim2.fromOffset(0, 0)})
+	task.delay(0.2, function()
+		if not State.configNamePopupOpen then configNamePopup.Visible = false end
+	end)
+end
+
+function closeConfigListPopup()
+	State.configListPopupOpen = false
+	Tween(configListPopup, 0.2, {Size = UDim2.fromOffset(0, 0)})
+	task.delay(0.2, function()
+		if not State.configListPopupOpen then configListPopup.Visible = false end
+	end)
+end
+
+function openConfigNamePopup()
+	closeConfigListPopup()
+	State.configNamePopupOpen = true
+	configNamePopup.Visible = true
+	configNamePopup.Size = UDim2.fromOffset(0, 0)
+	configNameBox.Text = ""
+	Tween(configNamePopup, 0.25, {Size = UDim2.fromOffset(300, 145)}, Enum.EasingStyle.Back)
+	task.delay(0.28, function()
+		if State.configNamePopupOpen then
+			configNameBox:CaptureFocus()
+		end
+	end)
+end
+
+function refreshConfigList()
+	for _, child in ipairs(configListScroll:GetChildren()) do
+		if child:IsA("TextButton") then child:Destroy() end
+	end
+
+	local files, err = getConfigFiles()
+	if err then
+		local row = New("TextLabel", {
+			Parent = configListScroll,
+			Size = UDim2.new(1, -8, 0, 34),
+			BackgroundTransparency = 1,
+			Text = err,
+			TextColor3 = COLORS.SubText,
+			TextSize = 10,
+			Font = Enum.Font.GothamMedium,
+			TextWrapped = true,
+		})
+		return
+	end
+
+	if #files == 0 then
+		New("TextLabel", {
+			Parent = configListScroll,
+			Size = UDim2.new(1, -8, 0, 34),
+			BackgroundTransparency = 1,
+			Text = "No configs in " .. CONFIG_FOLDER,
+			TextColor3 = COLORS.SubText,
+			TextSize = 10,
+			Font = Enum.Font.GothamMedium,
+		})
+	else
+		for _, cfg in ipairs(files) do
+			local btn = New("TextButton", {
+				Parent = configListScroll,
+				Size = UDim2.new(1, -8, 0, 34),
+				BackgroundColor3 = COLORS.Panel2,
+				BorderSizePixel = 0,
+				Text = cfg.name,
+				TextColor3 = COLORS.Text,
+				TextSize = 10,
+				Font = Enum.Font.GothamBold,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				AutoButtonColor = false,
+			})
+			Corner(btn, 8)
+			btn.MouseButton1Click:Connect(function()
+				local ok, result = loadConfigFile(cfg.path)
+				if not ok then
+					settingsStatus.Text = result
+					return
+				end
+
+				-- Применяем загруженные состояния к UI.
+				setTriggerbot(Features.triggerbotEnabled)
+				setCursorUnlock(Features.cursorUnlocked)
+				setNoclip(Features.noclipEnabled)
+				setESP(Features.espEnabled)
+				setSpinbot(Features.spinbotEnabled)
+				setBhop(Features.bhopEnabled)
+				setSky(Features.skyEnabled)
+				setStretch(Features.stretchEnabled)
+				toggleRainbowCursor(Features.rainbowCursorEnabled)
+				loadButton.Text = Features.openOnLoad and "ON" or "OFF"
+				loadButton.TextColor3 = Features.openOnLoad and COLORS.Text or COLORS.SubText
+				antiFlingBtn.Text = Features.antiFlingEnabled and "ON" or "OFF"
+				antiFlingBtn.TextColor3 = Features.antiFlingEnabled and COLORS.Text or COLORS.SubText
+				antiAFKBtn.Text = Features.antiAFKEnabled and "ON" or "OFF"
+				antiAFKBtn.TextColor3 = Features.antiAFKEnabled and COLORS.Text or COLORS.SubText
+				rainbowCursorBtn.Text = Features.rainbowCursorEnabled and "ON" or "OFF"
+				rainbowCursorBtn.TextColor3 = Features.rainbowCursorEnabled and COLORS.Text or COLORS.SubText
+				cameraTurnBindBtn.Text = keyName(Keys.cameraTurnKey)
+				rebindButton.Text = keyName(Keys.openKey)
+				updateKeybindsList()
+
+				if currentThemeName and THEMES[currentThemeName] then
+					applyTheme(THEMES[currentThemeName])
+				end
+
+				settingsStatus.Text = "Loaded config: " .. cfg.name
+				closeConfigListPopup()
+			end)
+		end
+	end
+
+	task.defer(function()
+		configListScroll.CanvasSize = UDim2.fromOffset(0, configListLayout.AbsoluteContentSize.Y + 8)
+	end)
+end
+
+function openConfigListPopup()
+	closeConfigNamePopup()
+	State.configListPopupOpen = true
+	configListPopup.Visible = true
+	configListPopup.Size = UDim2.fromOffset(0, 0)
+	refreshConfigList()
+	Tween(configListPopup, 0.25, {Size = UDim2.fromOffset(340, 325)}, Enum.EasingStyle.Back)
+end
+
+configSaveBtn.MouseButton1Click:Connect(openConfigNamePopup)
+configLoadBtn.MouseButton1Click:Connect(openConfigListPopup)
+configNameCancel.MouseButton1Click:Connect(closeConfigNamePopup)
+configListClose.MouseButton1Click:Connect(closeConfigListPopup)
+
+configNameSave.MouseButton1Click:Connect(function()
+	local ok, result = saveConfig(configNameBox.Text)
+	if ok then
+		settingsStatus.Text = "Saved config: " .. result
+		closeConfigNamePopup()
+	else
+		settingsStatus.Text = result
+	end
+end)
+
+configNameBox.FocusLost:Connect(function(enterPressed)
+	if enterPressed and State.configNamePopupOpen then
+		configNameSave:Activate()
+	end
+end)
+
+settingsStatus = New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 440),
+	Size = UDim2.new(1, -50, 0, 20),
+	BackgroundTransparency = 1,
+	Text = "ATEOT Hub Ready",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 53,
+})
+
+unloadButton = New("TextButton", {
+	Name = "UnloadButton",
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 485),
+	Size = UDim2.fromOffset(125, 34),
+	BackgroundColor3 = COLORS.Danger,
+	BorderSizePixel = 0,
+	Text = "UNLOAD UI",
+	TextColor3 = Color3.new(1, 1, 1),
+	TextSize = 10,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 54,
+})
+
+Corner(unloadButton, 9)
+
+--// =========================================================
+--// ANTI FLING
+--// =========================================================
+
+function startAntiFling()
+	local lastPosition = nil
+	
+	local steppedConn = RunService.Stepped:Connect(function()
+		for _, plr in ipairs(Players:GetPlayers()) do
+			if plr ~= player and plr.Character then
+				local char = plr.Character
+				for _, part in ipairs(char:GetDescendants()) do
+					if part:IsA("BasePart") then
+						part.CanCollide = false
+						part.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+						part.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+						part.CustomPhysicalProperties = PhysicalProperties.new(0, 0, 0, 0, 0)
+					end
+				end
+			end
+		end
+	end)
+	table.insert(antiFlingConnections, steppedConn)
+
+	local heartbeatConn = RunService.Heartbeat:Connect(function()
+		pcall(function()
+			local hrp = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			if hrp then
+				if hrp.AssemblyLinearVelocity.Magnitude > 200 or hrp.AssemblyAngularVelocity.Magnitude > 200 then
+					hrp.AssemblyLinearVelocity = Vector3.new(0, 0, 0)
+					hrp.AssemblyAngularVelocity = Vector3.new(0, 0, 0)
+					if lastPosition then
+						hrp.CFrame = lastPosition
+					end
+				elseif hrp.AssemblyLinearVelocity.Magnitude < 50 then
+					lastPosition = hrp.CFrame
+				end
+			end
+		end)
+	end)
+	table.insert(antiFlingConnections, heartbeatConn)
+end
+
+function stopAntiFling()
+	for _, conn in ipairs(antiFlingConnections) do
+		conn:Disconnect()
+	end
+	antiFlingConnections = {}
+end
+
+--// =========================================================
+--// ANTI AFK
+--// =========================================================
+
+function startAntiAFK()
+	antiAFKConnection = player.Idled:Connect(function()
+		VirtualUser:CaptureController()
+		VirtualUser:ClickButton2(Vector2.new(0, 0))
+	end)
+end
+
+function stopAntiAFK()
+	if antiAFKConnection then
+		antiAFKConnection:Disconnect()
+		antiAFKConnection = nil
+	end
+end
+
+--// =========================================================
+--// THEME APPLICATION
+--// =========================================================
+
+function applyTheme(color)
+	COLORS.Accent = color
+	openStroke.Color = color
+	if Features.triggerbotEnabled then tbToggle.BackgroundColor3 = color end
+	if Features.cursorUnlocked then cursorToggle.BackgroundColor3 = color end
+	if Features.noclipEnabled then noclipToggle.BackgroundColor3 = color end
+	if Features.espEnabled then espToggle.BackgroundColor3 = color end
+	if Features.spinbotEnabled then spinbotToggle.BackgroundColor3 = color end
+	if Features.bhopEnabled then bhopToggle.BackgroundColor3 = color end
+	if Features.skyEnabled then skyToggle.BackgroundColor3 = color end
+	if Features.stretchEnabled then stretchToggle.BackgroundColor3 = color end
+	espRebindBtn.TextColor3 = color
+	for _, obj in ipairs(themeObjects) do
+		if obj:IsA("Frame") then
+			if obj.Name == "ActiveIndicator" and obj.BackgroundTransparency == 1 then
+				obj.BackgroundColor3 = color
+			else
+				obj.BackgroundColor3 = color
+			end
+		elseif obj:IsA("TextLabel") then
+			obj.TextColor3 = color
+		end
+	end
+	updateKeybindsList()
+	updatePreview()
+end
+
+-- ============================================================
+-- THEME PICKER
+-- FIX: built inside its own function so its locals do not consume
+-- the main script's local-register budget.
+-- ============================================================
+function buildThemePicker()
+	local themePicker = New("Frame", {
+		Name = "ThemePicker",
+		Parent = gui,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(0, 0),
+		BackgroundColor3 = COLORS.Panel,
+		BorderSizePixel = 0,
+		Visible = false,
+		ZIndex = 70,
+	})
+
+	Corner(themePicker, 16)
+	Stroke(themePicker, COLORS.Border, 0.2, 1)
+
+	New("TextLabel", {
+		Parent = themePicker,
+		Position = UDim2.fromOffset(20, 15),
+		Size = UDim2.fromOffset(200, 20),
+		BackgroundTransparency = 1,
+		Text = "Select Theme Color (20)",
+		TextColor3 = COLORS.Text,
+		TextSize = 14,
+		Font = Enum.Font.GothamBold,
+		TextXAlignment = Enum.TextXAlignment.Left,
+		ZIndex = 71,
+	})
+
+	local closeThemes = New("TextButton", {
+		Parent = themePicker,
+		Position = UDim2.new(1, -35, 0, 12),
+		Size = UDim2.fromOffset(22, 22),
+		BackgroundColor3 = COLORS.Panel2,
+		BorderSizePixel = 0,
+		Text = "×",
+		TextColor3 = COLORS.SubText,
+		TextSize = 15,
+		Font = Enum.Font.GothamBold,
+		ZIndex = 71,
+	})
+	Corner(closeThemes, 6)
+
+	local themeScroll = New("ScrollingFrame", {
+		Parent = themePicker,
+		Position = UDim2.fromOffset(15, 45),
+		Size = UDim2.new(1, -30, 1, -60),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 4,
+		ScrollBarImageColor3 = COLORS.SubText,
+		ZIndex = 71,
+	})
+
+	New("UIGridLayout", {
+		Parent = themeScroll,
+		CellSize = UDim2.fromOffset(145, 30),
+		CellPadding = UDim2.fromOffset(8, 8),
+		SortOrder = Enum.SortOrder.Name,
+	})
+
+	for tName, tColor in pairs(THEMES) do
+			local tBtn = New("TextButton", {
+				Name = tName,
+				Parent = themeScroll,
+				BackgroundColor3 = COLORS.Panel2,
+				BorderSizePixel = 0,
+				Text = "  " .. tName,
+				TextColor3 = COLORS.Text,
+				TextSize = 10,
+				Font = Enum.Font.GothamMedium,
+				TextXAlignment = Enum.TextXAlignment.Left,
+				ZIndex = 72,
+			})
+			Corner(tBtn, 6)
+
+			local colorIndicator = New("Frame", {
+				Parent = tBtn,
+				Position = UDim2.new(1, -22, 0.5, -7),
+				Size = UDim2.fromOffset(14, 14),
+				BackgroundColor3 = tColor,
+				BorderSizePixel = 0,
+				ZIndex = 73,
+			})
+			Corner(colorIndicator, 4)
+
+			tBtn.MouseButton1Click:Connect(function()
+				applyTheme(tColor)
+				currentThemeName = tName
+				settingsStatus.Text = "Applied theme: " .. tName
+			end)
+	end
+
+	themeMenuBtn.MouseButton1Click:Connect(function()
+		State.themesOpen = not State.themesOpen
+		if State.themesOpen then
+			themePicker.Visible = true
+			Tween(themePicker, 0.3, { Size = UDim2.fromOffset(340, 280) }, Enum.EasingStyle.Back)
+		else
+			Tween(themePicker, 0.2, { Size = UDim2.fromOffset(0, 0) })
+			task.delay(0.2, function()
+				themePicker.Visible = false
+			end)
+		end
+	end)
+
+	closeThemes.MouseButton1Click:Connect(function()
+		State.themesOpen = false
+		Tween(themePicker, 0.2, { Size = UDim2.fromOffset(0, 0) })
+		task.delay(0.2, function()
+			themePicker.Visible = false
+		end)
+	end)
+end
+
+buildThemePicker()
+
+--// =========================================================
+--// MENU VISIBILITY CONTROL
+--// =========================================================
+
+function openMenu()
+	if State.opened or State.animating then return end
+	State.animating = true
+	State.opened = true
+	particleLayer.Visible = true
+	main.Visible = true
+	openButton.Visible = false
+	main.Size = CLOSED_SIZE
+
+	Tween(main, 0.45, { Size = MENU_SIZE }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+	task.delay(0.45, function() if State.opened then State.animating = false end end)
+end
+
+function closeMenu()
+	if not State.opened or State.animating then return end
+	State.animating = true
+	State.opened = false
+
+	Tween(main, 0.3, { Size = CLOSED_SIZE }, Enum.EasingStyle.Quint, Enum.EasingDirection.In)
+	task.delay(0.3, function()
+		if not State.opened then
+			main.Visible = false
+			particleLayer.Visible = false
+			openButton.Visible = true
+		end
+		State.animating = false
+	end)
+end
+
+function toggleMenu()
+	if State.opened then closeMenu() else openMenu() end
+end
+
+function openSettings()
+	if State.settingsOpen then return end
+	State.settingsOpen = true
+	settingsPopup.Visible = true
+	settingsPopup.Size = UDim2.fromOffset(0, 0)
+	Tween(settingsPopup, 0.35, { Size = SETTINGS_SIZE }, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+end
+
+function closeSettingsMenu()
+	if not State.settingsOpen then return end
+	State.settingsOpen = false
+	Tween(settingsPopup, 0.25, { Size = UDim2.fromOffset(0, 0) })
+	task.delay(0.25, function()
+		if not State.settingsOpen and settingsPopup.Parent then settingsPopup.Visible = false end
+	end)
+end
+
+settingsButton.MouseButton1Click:Connect(function()
+	if State.settingsOpen then closeSettingsMenu() else openSettings() end
+end)
+
+closeSettings.MouseButton1Click:Connect(closeSettingsMenu)
+openButton.MouseButton1Click:Connect(toggleMenu)
+
+--// =========================================================
+--// RAINBOW CURSOR UPDATE LOOP
+--// =========================================================
+
+RunService.RenderStepped:Connect(function()
+	if Features.rainbowCursorEnabled then
+		updateRainbowCursor()
+	end
+end)
+
+--// =========================================================
+--// INPUT HANDLER
+--// =========================================================
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+
+	-- Move Camera: поддерживает клавиатурные и мышиные бинды.
+	if Features.cameraTurnEnabled and Keys.cameraTurnKey ~= Enum.KeyCode.Unknown then
+		if input.UserInputType == Enum.UserInputType.Keyboard and input.KeyCode == Keys.cameraTurnKey then
+			startCameraTurn()
+			return
+		end
+	end
+
+	if input.UserInputType ~= Enum.UserInputType.Keyboard then return end
+
+	if State.waitingForKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForKey = false
+			rebindButton.Text = keyName(Keys.openKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.openKey = input.KeyCode
+			State.waitingForKey = false
+			rebindButton.Text = keyName(Keys.openKey)
+			settingsStatus.Text = "Open key: " .. keyName(Keys.openKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForTriggerKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForTriggerKey = false
+			tbRebindBtn.Text = keyName(Keys.triggerKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.triggerKey = input.KeyCode
+			State.waitingForTriggerKey = false
+			tbRebindBtn.Text = keyName(Keys.triggerKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForCursorKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForCursorKey = false
+			cursorRebindBtn.Text = keyName(Keys.unlockCursorKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.unlockCursorKey = input.KeyCode
+			State.waitingForCursorKey = false
+			cursorRebindBtn.Text = keyName(Keys.unlockCursorKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForNoclipKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForNoclipKey = false
+			noclipRebindBtn.Text = keyName(Keys.noclipKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.noclipKey = input.KeyCode
+			State.waitingForNoclipKey = false
+			noclipRebindBtn.Text = keyName(Keys.noclipKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForEspKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForEspKey = false
+			espRebindBtn.Text = keyName(Keys.espKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.espKey = input.KeyCode
+			State.waitingForEspKey = false
+			espRebindBtn.Text = keyName(Keys.espKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForSpinbotKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForSpinbotKey = false
+			spinbotRebindBtn.Text = keyName(Keys.spinbotKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.spinbotKey = input.KeyCode
+			State.waitingForSpinbotKey = false
+			spinbotRebindBtn.Text = keyName(Keys.spinbotKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForBhopKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForBhopKey = false
+			bhopRebindBtn.Text = keyName(Keys.bhopKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.bhopKey = input.KeyCode
+			State.waitingForBhopKey = false
+			bhopRebindBtn.Text = keyName(Keys.bhopKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForSkyKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForSkyKey = false
+			skyRebindBtn.Text = keyName(Keys.skyKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.skyKey = input.KeyCode
+			State.waitingForSkyKey = false
+			skyRebindBtn.Text = keyName(Keys.skyKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForStretchKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForStretchKey = false
+			stretchRebindBtn.Text = keyName(Keys.stretchKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.stretchKey = input.KeyCode
+			State.waitingForStretchKey = false
+			stretchRebindBtn.Text = keyName(Keys.stretchKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForCameraTurnKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForCameraTurnKey = false
+			cameraTurnBindBtn.Text = keyName(Keys.cameraTurnKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.cameraTurnKey = input.KeyCode
+			State.waitingForCameraTurnKey = false
+			cameraTurnBindBtn.Text = keyName(Keys.cameraTurnKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if input.KeyCode == Keys.openKey then toggleMenu() end
+	if Keys.triggerKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.triggerKey then setTriggerbot(not Features.triggerbotEnabled) end
+	if Keys.unlockCursorKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.unlockCursorKey then setCursorUnlock(not Features.cursorUnlocked) end
+	if Keys.noclipKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.noclipKey then setNoclip(not Features.noclipEnabled) end
+	if Keys.espKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.espKey then setESP(not Features.espEnabled) end
+	if Keys.spinbotKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.spinbotKey then setSpinbot(not Features.spinbotEnabled) end
+	if Keys.bhopKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.bhopKey then setBhop(not Features.bhopEnabled) end
+	if Keys.skyKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.skyKey then setSky(not Features.skyEnabled) end
+	if Keys.stretchKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.stretchKey then setStretch(not Features.stretchEnabled) end
+end)
+
+State.selectedButton = playerButton
+playerButton.BackgroundColor3 = Color3.fromRGB(26, 20, 25)
+playerIndicator = playerButton:FindFirstChild("ActiveIndicator")
+if playerIndicator then playerIndicator.BackgroundTransparency = 0 end
+playerPage.Visible = true
+updateKeybindsList()
+
+task.spawn(function()
+	while gui.Parent do
+		Tween(topGlow, 1.8, { BackgroundTransparency = 0.55 }, Enum.EasingStyle.Sine)
+		task.wait(1.8)
+		Tween(topGlow, 1.8, { BackgroundTransparency = 0.05 }, Enum.EasingStyle.Sine)
+		task.wait(1.8)
+	end
+end)
+
+function unloadUI()
+	stopSkyMode()
+	stopStretch()
+	stopAntiFling()
+	stopAntiAFK()
+	toggleRainbowCursor(false)
+	for _, draw in pairs(espDrawings) do
+		for _, v in pairs(draw) do safeDestroy(v) end
+	end
+	safeDestroy(gui)
+	print("ATEOT HUB UNLOADED")
+end
+
+unloadButton.MouseButton1Click:Connect(function()
+	settingsStatus.Text = "Unloading UI..."
+	task.wait(0.3)
+	unloadUI()
+end)
+
+pcall(function() ensureConfigFolder() end)
+print("ATEOT HUB LOADED SUCCESSFULLY")
