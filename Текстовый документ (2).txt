@@ -1,3 +1,13 @@
+--// =========================================================
+--// ATEOT HUB
+--// Clean UI Edition (With Full ESP, Noclip, Triggerbot & Custom Binds)
+--// Roblox Luau
+--// =========================================================
+
+--// =========================================================
+--// SERVICES
+--// =========================================================
+
 local Players = game:GetService("Players")
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -10,6 +20,10 @@ local player = Players.LocalPlayer
 local playerGui = player:WaitForChild("PlayerGui")
 local mouse = player:GetMouse()
 local camera = Workspace.CurrentCamera
+
+--// =========================================================
+--// CONFIG & THEMES (20 Themes)
+--// =========================================================
 
 local THEMES = {
 	["Default Accent"] = Color3.fromRGB(255, 42, 92),
@@ -48,9 +62,13 @@ local COLORS = {
 	DangerHover = Color3.fromRGB(220, 20, 30),
 }
 
-local MENU_SIZE = UDim2.fromOffset(760, 500)
+local MENU_SIZE = UDim2.fromOffset(760, 710)
 local CLOSED_SIZE = UDim2.fromOffset(690, 450)
 local SETTINGS_SIZE = UDim2.fromOffset(460, 560)
+
+--// =========================================================
+--// STATE
+--// =========================================================
 
 local State = {
 	opened = false,
@@ -74,10 +92,33 @@ local State = {
 	waitingForSkyKey = false,
 	waitingForStretchKey = false,
 	waitingForCameraTurnKey = false,
+	waitingForHitboxKey = false,
+	waitingForFreecamKey = false,
 	keybindsOverlayVisible = false,
+	activeFeaturesOverlayVisible = false,
 	selectedButton = nil,
 	rainbowCursorEnabled = false,
 	cameraTurnEnabled = false,
+	hitboxEnabled = false,
+	hitboxHeadEnabled = true,
+	hitboxBodyEnabled = true,
+	hitboxHeadSize = Vector3.new(6, 6, 6),
+	hitboxBodySize = Vector3.new(6, 7, 6),
+	hitboxTransparency = 0.5,
+	hitboxShowVisuals = true,
+	freecamEnabled = false,
+	freecamDownDistance = 100,
+	freecamSpeed = 1.2,
+	freecamFastSpeed = 3,
+	aimbotEnabled = false,
+	aimbotFOV = 200,
+	aimbotSmoothness = 1,
+	aimbotVisibleCheck = true,
+	aimbotTeamCheck = true,
+	aimbotTrackPart = "Head",
+	wallshotEnabled = false,
+	wallshotMode = "Transparent",
+	wallshotTransparency = 0.5,
 	configNamePopupOpen = false,
 	configListPopupOpen = false,
 }
@@ -94,6 +135,12 @@ local Keys = {
 	skyKey = Enum.KeyCode.Unknown,
 	stretchKey = Enum.KeyCode.Unknown,
 	cameraTurnKey = Enum.KeyCode.Unknown,
+	hitboxKey = Enum.KeyCode.Unknown,
+	freecamKey = Enum.KeyCode.H,
+	antiFlingKey = Enum.KeyCode.Unknown,
+	antiAFKKey = Enum.KeyCode.Unknown,
+	aimbotKey = Enum.KeyCode.Unknown,
+	wallshotKey = Enum.KeyCode.Unknown,
 }
 
 local KEY_TYPES = {
@@ -125,6 +172,15 @@ local Features = {
 	openOnLoad = false,
 	rainbowCursorEnabled = false,
 	cameraTurnEnabled = false,
+	aimbotEnabled = false,
+	aimbotFOV = 200,
+	aimbotSmoothness = 1,
+	aimbotVisibleCheck = true,
+	aimbotTeamCheck = true,
+	aimbotTrackPart = "Head",
+	wallshotEnabled = false,
+	wallshotMode = "Transparent",
+	wallshotTransparency = 0.5,
 	configNamePopupOpen = false,
 	configListPopupOpen = false,
 }
@@ -141,6 +197,7 @@ local espSettings = {
 	ShowName = true,
 	ShowHeldTool = true,
 	OffscreenArrow = true,
+	MaxDistance = 500,
 }
 
 local pages = {}
@@ -340,7 +397,7 @@ end
 
 local function buildConfigData()
 	return {
-		version = 2,
+		version = 4,
 		theme = currentThemeName,
 		Keys = {
 			openKey = keyToString(Keys.openKey),
@@ -354,6 +411,12 @@ local function buildConfigData()
 			skyKey = keyToString(Keys.skyKey),
 			stretchKey = keyToString(Keys.stretchKey),
 			cameraTurnKey = keyToString(Keys.cameraTurnKey),
+			hitboxKey = keyToString(Keys.hitboxKey),
+			freecamKey = keyToString(Keys.freecamKey),
+			antiFlingKey = keyToString(Keys.antiFlingKey),
+			antiAFKKey = keyToString(Keys.antiAFKKey),
+			aimbotKey = keyToString(Keys.aimbotKey),
+			wallshotKey = keyToString(Keys.wallshotKey),
 		},
 		Features = {
 			triggerbotEnabled = Features.triggerbotEnabled,
@@ -375,6 +438,28 @@ local function buildConfigData()
 			openOnLoad = Features.openOnLoad,
 			rainbowCursorEnabled = Features.rainbowCursorEnabled,
 			cameraTurnEnabled = Features.cameraTurnEnabled,
+			hitboxEnabled = Features.hitboxEnabled,
+			hitboxHeadEnabled = Features.hitboxHeadEnabled,
+			hitboxBodyEnabled = Features.hitboxBodyEnabled,
+			hitboxHeadSize = {Features.hitboxHeadSize.X, Features.hitboxHeadSize.Y, Features.hitboxHeadSize.Z},
+			hitboxBodySize = {Features.hitboxBodySize.X, Features.hitboxBodySize.Y, Features.hitboxBodySize.Z},
+			hitboxTransparency = Features.hitboxTransparency,
+			hitboxShowVisuals = Features.hitboxShowVisuals,
+			freecamEnabled = Features.freecamEnabled,
+			freecamDownDistance = Features.freecamDownDistance,
+			freecamSpeed = Features.freecamSpeed,
+			freecamFastSpeed = Features.freecamFastSpeed,
+				aimbotEnabled = Features.aimbotEnabled,
+			aimbotFOV = Features.aimbotFOV,
+			aimbotSmoothness = Features.aimbotSmoothness,
+			aimbotVisibleCheck = Features.aimbotVisibleCheck,
+			aimbotTeamCheck = Features.aimbotTeamCheck,
+			aimbotTrackPart = Features.aimbotTrackPart,
+			wallshotEnabled = Features.wallshotEnabled,
+			wallshotMode = Features.wallshotMode,
+			wallshotTransparency = Features.wallshotTransparency,
+			keybindsOverlayVisible = State.keybindsOverlayVisible,
+			activeFeaturesOverlayVisible = State.activeFeaturesOverlayVisible,
 		},
 		espSettings = espSettings,
 	}
@@ -491,6 +576,30 @@ local function loadConfigFile(filePath)
 		end
 	end
 
+	if type(espSettings.MaxDistance) ~= "number" then espSettings.MaxDistance = 500 end
+	espSettings.MaxDistance = math.clamp(espSettings.MaxDistance, 25, 10000)
+
+	if type(data.Features) == "table" then
+		if data.Features.aimbotFOV ~= nil then Features.aimbotFOV = tonumber(data.Features.aimbotFOV) or Features.aimbotFOV end
+		if data.Features.aimbotSmoothness ~= nil then Features.aimbotSmoothness = tonumber(data.Features.aimbotSmoothness) or Features.aimbotSmoothness end
+		if data.Features.aimbotVisibleCheck ~= nil then Features.aimbotVisibleCheck = data.Features.aimbotVisibleCheck and true or false end
+		if data.Features.aimbotTeamCheck ~= nil then Features.aimbotTeamCheck = data.Features.aimbotTeamCheck and true or false end
+		if data.Features.aimbotTrackPart ~= nil then Features.aimbotTrackPart = tostring(data.Features.aimbotTrackPart) end
+		if data.Features.wallshotMode ~= nil then Features.wallshotMode = tostring(data.Features.wallshotMode) end
+		if data.Features.wallshotTransparency ~= nil then Features.wallshotTransparency = math.clamp(tonumber(data.Features.wallshotTransparency) or Features.wallshotTransparency, 0, 1) end
+		if type(data.Features.hitboxHeadSize) == "table" then Features.hitboxHeadSize = Vector3.new(tonumber(data.Features.hitboxHeadSize[1]) or 6, tonumber(data.Features.hitboxHeadSize[2]) or 6, tonumber(data.Features.hitboxHeadSize[3]) or 6) end
+		if type(data.Features.hitboxBodySize) == "table" then Features.hitboxBodySize = Vector3.new(tonumber(data.Features.hitboxBodySize[1]) or 6, tonumber(data.Features.hitboxBodySize[2]) or 7, tonumber(data.Features.hitboxBodySize[3]) or 6) end
+		Features.hitboxTransparency = math.clamp(tonumber(data.Features.hitboxTransparency) or Features.hitboxTransparency, 0, 1)
+		Features.freecamDownDistance = math.clamp(tonumber(data.Features.freecamDownDistance) or Features.freecamDownDistance, 10, 1000)
+		Features.freecamSpeed = math.max(0.1, tonumber(data.Features.freecamSpeed) or Features.freecamSpeed)
+		Features.freecamFastSpeed = math.max(0.1, tonumber(data.Features.freecamFastSpeed) or Features.freecamFastSpeed)
+	end
+
+	if data.Features then
+		State.keybindsOverlayVisible = data.Features.keybindsOverlayVisible and true or false
+		State.activeFeaturesOverlayVisible = data.Features.activeFeaturesOverlayVisible and true or false
+	end
+
 	if type(data.theme) == "string" and THEMES[data.theme] then
 		currentThemeName = data.theme
 	end
@@ -546,7 +655,9 @@ function makeDraggable(frame, handle)
 	end)
 end
 
-
+--// =========================================================
+--// RAINBOW CURSOR
+--// =========================================================
 
 function createRainbowCursor()
 	if rainbowCursorGui then
@@ -611,7 +722,9 @@ function toggleRainbowCursor(state)
 	end
 end
 
-
+--// =========================================================
+--// GUI
+--// =========================================================
 
 gui = New("ScreenGui", {
 	Name = "AteotHub",
@@ -627,7 +740,9 @@ espLayer = New("Folder", {
 	Parent = gui
 })
 
-
+--// =========================================================
+--// BACKGROUND & PARTICLES
+--// =========================================================
 
 background = New("Frame", {
 	Name = "Background",
@@ -693,6 +808,9 @@ task.spawn(function()
 	end
 end)
 
+--// =========================================================
+--// OPEN BUTTON
+--// =========================================================
 
 openButton = New("TextButton", {
 	Name = "OpenButton",
@@ -737,7 +855,9 @@ openButton.MouseLeave:Connect(function()
 	Tween(openGlow, 0.2, { BackgroundTransparency = 0.9 })
 end)
 
-
+--// =========================================================
+--// MAIN WINDOW
+--// =========================================================
 
 main = New("Frame", {
 	Name = "Main",
@@ -777,7 +897,7 @@ sidebar = New("Frame", {
 	Name = "Sidebar",
 	Parent = main,
 	Position = UDim2.fromOffset(0, 0),
-	Size = UDim2.fromOffset(190, 500),
+	Size = UDim2.fromOffset(190, 710),
 	BackgroundColor3 = COLORS.Panel,
 	BorderSizePixel = 0,
 	ZIndex = 6,
@@ -789,7 +909,7 @@ sidebarFix = New("Frame", {
 	Name = "SidebarFix",
 	Parent = sidebar,
 	Position = UDim2.new(1, -18, 0, 0),
-	Size = UDim2.fromOffset(18, 500),
+	Size = UDim2.fromOffset(18, 710),
 	BackgroundColor3 = COLORS.Panel,
 	BorderSizePixel = 0,
 	ZIndex = 6,
@@ -1035,7 +1155,7 @@ keybindsFrame = New("Frame", {
 	Name = "KeybindsOverlay",
 	Parent = gui,
 	Position = UDim2.fromOffset(20, 20),
-	Size = UDim2.fromOffset(220, 230),
+	Size = UDim2.fromOffset(220, 300),
 	BackgroundColor3 = COLORS.Panel,
 	BorderSizePixel = 0,
 	Visible = false,
@@ -1083,6 +1203,69 @@ kbLayout = New("UIListLayout", {
 	Padding = UDim.new(0, 5)
 })
 
+activeFeaturesFrame = New("Frame", {
+	Name = "ActiveFeaturesOverlay",
+	Parent = gui,
+	Position = UDim2.fromOffset(20, 265),
+	Size = UDim2.fromOffset(220, 300),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 100,
+})
+Corner(activeFeaturesFrame, 12)
+Stroke(activeFeaturesFrame, COLORS.Border, 0.2, 1)
+makeDraggable(activeFeaturesFrame)
+
+New("TextLabel", {
+	Parent = activeFeaturesFrame,
+	Position = UDim2.fromOffset(15, 10),
+	Size = UDim2.fromOffset(190, 20),
+	BackgroundTransparency = 1,
+	Text = "Enabled Features",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 101,
+})
+activeFeaturesLine = New("Frame", {Parent=activeFeaturesFrame, Position=UDim2.fromOffset(15,34), Size=UDim2.new(1,-30,0,1), BackgroundColor3=COLORS.Accent, BorderSizePixel=0, ZIndex=101})
+table.insert(themeObjects, activeFeaturesLine)
+activeFeaturesContainer = New("Frame", {Parent=activeFeaturesFrame, Position=UDim2.fromOffset(15,42), Size=UDim2.new(1,-30,1,-52), BackgroundTransparency=1, ZIndex=101})
+activeFeaturesLayout = New("UIListLayout", {Parent=activeFeaturesContainer, SortOrder=Enum.SortOrder.LayoutOrder, Padding=UDim.new(0,4)})
+
+function updateActiveFeaturesList()
+	if not activeFeaturesContainer then return end
+	for _, child in ipairs(activeFeaturesContainer:GetChildren()) do
+		if child:IsA("TextLabel") then child:Destroy() end
+	end
+	local enabled = {}
+	local function add(name, state) if state then table.insert(enabled, name) end end
+	add("Aimbot", Features.aimbotEnabled)
+	add("Wallshot", Features.wallshotEnabled)
+	add("ESP", Features.espEnabled)
+	add("Triggerbot", Features.triggerbotEnabled)
+	add("Noclip", Features.noclipEnabled)
+	add("Spinbot", Features.spinbotEnabled)
+	add("Bunny Hop", Features.bhopEnabled)
+	add("Sky Mode", Features.skyEnabled)
+	add("Stretch", Features.stretchEnabled)
+	add("Anti Fling", Features.antiFlingEnabled)
+	add("Anti AFK", Features.antiAFKEnabled)
+	add("Rainbow Cursor", Features.rainbowCursorEnabled)
+	add("Move Camera", Features.cameraTurnEnabled)
+	add("Hitbox", Features.hitboxEnabled)
+	add("Invisible / Freecam", Features.freecamEnabled)
+	add("Cursor Unlock", Features.cursorUnlocked)
+	if #enabled == 0 then
+		New("TextLabel", {Parent=activeFeaturesContainer, Size=UDim2.new(1,0,0,18), BackgroundTransparency=1, Text="Nothing enabled", TextColor3=COLORS.Muted, TextSize=9, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101})
+	else
+		for _, name in ipairs(enabled) do
+			New("TextLabel", {Parent=activeFeaturesContainer, Size=UDim2.new(1,0,0,16), BackgroundTransparency=1, Text="●  "..name, TextColor3=COLORS.SubText, TextSize=9, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=101})
+		end
+	end
+end
+
 function updateKeybindsList()
 	for _, child in ipairs(kbContainer:GetChildren()) do
 		if child:IsA("Frame") then child:Destroy() end
@@ -1122,6 +1305,24 @@ function updateKeybindsList()
 	end
 	if Keys.cameraTurnKey and Keys.cameraTurnKey ~= Enum.KeyCode.Unknown then
 		table.insert(binds, { name = "Move Camera", key = Keys.cameraTurnKey })
+	end
+	if Keys.hitboxKey and Keys.hitboxKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Hitbox", key = Keys.hitboxKey })
+	end
+	if Keys.freecamKey and Keys.freecamKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Invisible / Freecam", key = Keys.freecamKey })
+	end
+	if Keys.antiFlingKey and Keys.antiFlingKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Anti Fling", key = Keys.antiFlingKey })
+	end
+	if Keys.antiAFKKey and Keys.antiAFKKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Anti AFK", key = Keys.antiAFKKey })
+	end
+	if Keys.aimbotKey and Keys.aimbotKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Aimbot", key = Keys.aimbotKey })
+	end
+	if Keys.wallshotKey and Keys.wallshotKey ~= Enum.KeyCode.Unknown then
+		table.insert(binds, { name = "Wallshot", key = Keys.wallshotKey })
 	end
 
 	for i, b in ipairs(binds) do
@@ -2703,13 +2904,867 @@ function updatePreview()
 end
 
 --// =========================================================
+--// AIMBOT ROW
+--// =========================================================
+
+aimbotRow = New("Frame", {
+	Name = "AimbotRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 410),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+Corner(aimbotRow, 10)
+Stroke(aimbotRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = aimbotRow,
+	Position = UDim2.fromOffset(16, 7),
+	Size = UDim2.fromOffset(250, 18),
+	BackgroundTransparency = 1,
+	Text = "Aimbot",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+New("TextLabel", {
+	Parent = aimbotRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(330, 16),
+	BackgroundTransparency = 1,
+	Text = "Auto-track the closest target inside FOV",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+aimbotToggle = New("TextButton", {
+	Parent = aimbotRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(aimbotToggle, 12)
+Stroke(aimbotToggle, COLORS.Border, 0.3, 1)
+
+aimbotKnob = New("Frame", {
+	Parent = aimbotToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+Corner(aimbotKnob, 9)
+
+aimbotSettingsBtn = New("TextButton", {
+	Parent = aimbotRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(aimbotSettingsBtn, 7)
+
+--// =========================================================
+--// WALLSHOT ROW
+--// =========================================================
+
+wallshotRow = New("Frame", {
+	Name = "WallshotRow",
+	Parent = playerPage,
+	Position = UDim2.fromOffset(36, 470),
+	Size = UDim2.new(1, -72, 0, 50),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	ZIndex = 8,
+})
+Corner(wallshotRow, 10)
+Stroke(wallshotRow, COLORS.Border, 0.3, 1)
+
+New("TextLabel", {
+	Parent = wallshotRow,
+	Position = UDim2.fromOffset(16, 7),
+	Size = UDim2.fromOffset(250, 18),
+	BackgroundTransparency = 1,
+	Text = "Wallshot",
+	TextColor3 = COLORS.Text,
+	TextSize = 13,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+New("TextLabel", {
+	Parent = wallshotRow,
+	Position = UDim2.fromOffset(16, 26),
+	Size = UDim2.fromOffset(330, 16),
+	BackgroundTransparency = 1,
+	Text = "Pass through map walls; choose transparent mode",
+	TextColor3 = COLORS.SubText,
+	TextSize = 10,
+	Font = Enum.Font.GothamMedium,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 9,
+})
+
+wallshotToggle = New("TextButton", {
+	Parent = wallshotRow,
+	Position = UDim2.new(1, -100, 0.5, -12),
+	Size = UDim2.fromOffset(45, 24),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "",
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(wallshotToggle, 12)
+Stroke(wallshotToggle, COLORS.Border, 0.3, 1)
+
+wallshotKnob = New("Frame", {
+	Parent = wallshotToggle,
+	Position = UDim2.fromOffset(3, 3),
+	Size = UDim2.fromOffset(18, 18),
+	BackgroundColor3 = COLORS.SubText,
+	BorderSizePixel = 0,
+	ZIndex = 10,
+})
+Corner(wallshotKnob, 9)
+
+wallshotSettingsBtn = New("TextButton", {
+	Parent = wallshotRow,
+	Position = UDim2.new(1, -45, 0.5, -14),
+	Size = UDim2.fromOffset(28, 28),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = "⚙",
+	TextColor3 = COLORS.SubText,
+	TextSize = 14,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 9,
+})
+Corner(wallshotSettingsBtn, 7)
+
+--// =========================================================
+--// AIMBOT ENGINE
+--// =========================================================
+
+aimbotFOVCircle = New("Frame", {
+	Name = "AimbotFOV",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(Features.aimbotFOV * 2, Features.aimbotFOV * 2),
+	BackgroundTransparency = 1,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 16,
+})
+Corner(aimbotFOVCircle, 1000)
+aimbotFOVStroke = Stroke(aimbotFOVCircle, COLORS.Accent, 0.3, 1)
+
+aimbotTargetLabel = New("TextLabel", {
+	Name = "AimbotTarget",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0),
+	Position = UDim2.new(0.5, 0, 0.5, Features.aimbotFOV + 10),
+	Size = UDim2.fromOffset(240, 20),
+	BackgroundTransparency = 1,
+	Text = "",
+	TextColor3 = COLORS.Accent,
+	TextSize = 12,
+	Font = Enum.Font.Code,
+	ZIndex = 16,
+})
+
+table.insert(themeObjects, aimbotFOVStroke)
+
+toggleAimbotFOVVisual = function()
+	if not aimbotFOVCircle then return end
+	local r = math.clamp(tonumber(Features.aimbotFOV) or 200, 10, 1000)
+	aimbotFOVCircle.Size = UDim2.fromOffset(r * 2, r * 2)
+	aimbotFOVCircle.Position = UDim2.fromScale(0.5, 0.5)
+	aimbotTargetLabel.Position = UDim2.new(0.5, 0, 0.5, r + 10)
+end
+
+toggleAimbotFOVVisual()
+
+local function getClosestAimbotTarget()
+	local closestPlayer, closestPart = nil, nil
+	local shortestDist = math.clamp(tonumber(Features.aimbotFOV) or 200, 10, 1000)
+	local center = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y / 2)
+
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr ~= player and plr.Character then
+			if Features.aimbotTeamCheck and plr.Team == player.Team then
+				continue
+			end
+
+			local hum = plr.Character:FindFirstChildOfClass("Humanoid")
+			local part = plr.Character:FindFirstChild(Features.aimbotTrackPart)
+				or plr.Character:FindFirstChild("HumanoidRootPart")
+
+			if hum and hum.Health > 0 and part then
+				if Features.aimbotVisibleCheck then
+					local rayParams = RaycastParams.new()
+					rayParams.FilterDescendantsInstances = {player.Character, camera}
+					rayParams.FilterType = Enum.RaycastFilterType.Exclude
+					local origin = camera.CFrame.Position
+					local direction = (part.Position - origin)
+					if direction.Magnitude > 0 then
+						local result = Workspace:Raycast(origin, direction, rayParams)
+						if result and result.Instance then
+							local hitModel = result.Instance:FindFirstAncestorOfClass("Model")
+							if hitModel ~= plr.Character then
+								continue
+							end
+						end
+					end
+				end
+
+				local screenPos, onScreen = camera:WorldToViewportPoint(part.Position)
+				if onScreen then
+					local dist = (Vector2.new(screenPos.X, screenPos.Y) - center).Magnitude
+					if dist < shortestDist then
+						shortestDist = dist
+						closestPlayer = plr
+						closestPart = part
+					end
+				end
+			end
+		end
+	end
+
+	return closestPlayer, closestPart
+end
+
+function setAimbot(state)
+	Features.aimbotEnabled = state
+	if Features.aimbotEnabled then
+		Tween(aimbotToggle, 0.2, {BackgroundColor3 = COLORS.Accent})
+		Tween(aimbotKnob, 0.2, {Position = UDim2.fromOffset(24, 3), BackgroundColor3 = Color3.new(1, 1, 1)})
+		aimbotFOVCircle.Visible = true
+	else
+		Tween(aimbotToggle, 0.2, {BackgroundColor3 = COLORS.Panel2})
+		Tween(aimbotKnob, 0.2, {Position = UDim2.fromOffset(3, 3), BackgroundColor3 = COLORS.SubText})
+		aimbotFOVCircle.Visible = false
+		aimbotTargetLabel.Text = ""
+	end
+end
+
+RunService.RenderStepped:Connect(function(dt)
+	if not Features.aimbotEnabled then return end
+	local target, targetPart = getClosestAimbotTarget()
+	if target and targetPart then
+		aimbotTargetLabel.Text = "🎯 " .. target.Name
+		local eyePos = camera.CFrame.Position
+		local direction = (targetPart.Position - eyePos)
+		if direction.Magnitude > 0 then
+			local newCFrame = CFrame.lookAt(eyePos, eyePos + direction.Unit)
+			if Features.aimbotSmoothness >= 1 then
+				camera.CFrame = newCFrame
+			else
+				local alpha = math.clamp(Features.aimbotSmoothness * (dt * 60), 0, 1)
+				camera.CFrame = camera.CFrame:Lerp(newCFrame, alpha)
+			end
+		end
+	else
+		aimbotTargetLabel.Text = ""
+	end
+end)
+
+--// AIMBOT SETTINGS POPUP
+
+aimbotPopup = New("Frame", {
+	Name = "AimbotPopup",
+	Parent = gui,
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	Position = UDim2.fromScale(0.5, 0.5),
+	Size = UDim2.fromOffset(0, 0),
+	BackgroundColor3 = COLORS.Panel,
+	BorderSizePixel = 0,
+	Visible = false,
+	ZIndex = 80,
+})
+Corner(aimbotPopup, 14)
+Stroke(aimbotPopup, COLORS.Border, 0.2, 1)
+
+New("TextLabel", {Parent = aimbotPopup, Position = UDim2.fromOffset(20, 15), Size = UDim2.fromOffset(240, 22), BackgroundTransparency = 1, Text = "Aimbot Settings", TextColor3 = COLORS.Text, TextSize = 15, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+aimbotClose = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -38, 0, 12), Size = UDim2.fromOffset(24, 24), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = "×", TextColor3 = COLORS.SubText, TextSize = 16, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotClose, 7)
+
+local function makeAimbotLabel(text, y)
+	return New("TextLabel", {Parent = aimbotPopup, Position = UDim2.fromOffset(20, y), Size = UDim2.fromOffset(125, 24), BackgroundTransparency = 1, Text = text, TextColor3 = COLORS.SubText, TextSize = 10, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+end
+local function makeAimbotBox(text, y)
+	local b = New("TextBox", {Parent = aimbotPopup, Position = UDim2.new(1, -125, 0, y), Size = UDim2.fromOffset(100, 26), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = text, TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, ClearTextOnFocus = false, ZIndex = 81})
+	Corner(b, 6)
+	return b
+end
+makeAimbotLabel("Keybind", 48)
+aimbotBindBtn = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -125, 0, 45), Size = UDim2.fromOffset(100, 28), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = keyName(Keys.aimbotKey), TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotBindBtn, 6)
+aimbotDeleteBindBtn = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -20, 0, 45), Size = UDim2.fromOffset(14, 28), BackgroundColor3 = COLORS.Danger, BorderSizePixel = 0, Text = "×", TextColor3 = Color3.new(1,1,1), TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotDeleteBindBtn, 5)
+aimbotDeleteBindBtn.MouseButton1Click:Connect(function() Keys.aimbotKey = Enum.KeyCode.Unknown; aimbotBindBtn.Text = "None"; updateKeybindsList() end)
+aimbotBindBtn.MouseButton1Click:Connect(function() State.waitingForAimbotKey = true; aimbotBindBtn.Text = "Press key..." end)
+
+makeAimbotLabel("FOV radius", 85)
+aimbotFOVBox = makeAimbotBox(tostring(Features.aimbotFOV), 82)
+aimbotFOVBox.FocusLost:Connect(function()
+	local n = tonumber(aimbotFOVBox.Text)
+	if n and n > 0 then Features.aimbotFOV = math.clamp(n, 10, 1000) end
+	aimbotFOVBox.Text = tostring(Features.aimbotFOV)
+	toggleAimbotFOVVisual()
+end)
+
+makeAimbotLabel("Smoothness", 122)
+aimbotSmoothBox = makeAimbotBox(tostring(Features.aimbotSmoothness), 119)
+aimbotSmoothBox.FocusLost:Connect(function()
+	local n = tonumber(aimbotSmoothBox.Text)
+	if n then Features.aimbotSmoothness = math.clamp(n, 0.05, 1) end
+	aimbotSmoothBox.Text = tostring(Features.aimbotSmoothness)
+end)
+
+makeAimbotLabel("Visible check", 159)
+aimbotVisibleBtn = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -125, 0, 156), Size = UDim2.fromOffset(100, 26), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = "", TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotVisibleBtn, 6)
+local function updateAimbotButtons()
+	aimbotVisibleBtn.Text = Features.aimbotVisibleCheck and "ON" or "OFF"
+	aimbotVisibleBtn.TextColor3 = Features.aimbotVisibleCheck and COLORS.Text or COLORS.SubText
+	aimbotTeamBtn.Text = Features.aimbotTeamCheck and "ON" or "OFF"
+	aimbotTeamBtn.TextColor3 = Features.aimbotTeamCheck and COLORS.Text or COLORS.SubText
+	aimbotTrackBtn.Text = Features.aimbotTrackPart
+	if aimbotBindBtn then aimbotBindBtn.Text = keyName(Keys.aimbotKey) end
+end
+aimbotVisibleBtn.MouseButton1Click:Connect(function() Features.aimbotVisibleCheck = not Features.aimbotVisibleCheck; updateAimbotButtons() end)
+
+makeAimbotLabel("Team check", 196)
+aimbotTeamBtn = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -125, 0, 193), Size = UDim2.fromOffset(100, 26), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = "", TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotTeamBtn, 6)
+aimbotTeamBtn.MouseButton1Click:Connect(function() Features.aimbotTeamCheck = not Features.aimbotTeamCheck; updateAimbotButtons() end)
+
+makeAimbotLabel("Target part", 233)
+aimbotTrackBtn = New("TextButton", {Parent = aimbotPopup, Position = UDim2.new(1, -125, 0, 230), Size = UDim2.fromOffset(100, 26), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = Features.aimbotTrackPart, TextColor3 = COLORS.Accent, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(aimbotTrackBtn, 6)
+aimbotTrackBtn.MouseButton1Click:Connect(function()
+	if Features.aimbotTrackPart == "Head" then Features.aimbotTrackPart = "HumanoidRootPart" elseif Features.aimbotTrackPart == "HumanoidRootPart" then Features.aimbotTrackPart = "UpperTorso" else Features.aimbotTrackPart = "Head" end
+	updateAimbotButtons()
+end)
+
+updateAimbotButtons()
+
+aimbotSettingsBtn.MouseButton1Click:Connect(function()
+	if aimbotPopup.Visible then
+		Tween(aimbotPopup, 0.2, {Size = UDim2.fromOffset(0,0)})
+		task.delay(0.2, function() aimbotPopup.Visible = false end)
+	else
+		aimbotPopup.Visible = true
+		Tween(aimbotPopup, 0.25, {Size = UDim2.fromOffset(300, 285)}, Enum.EasingStyle.Back)
+	end
+end)
+aimbotClose.MouseButton1Click:Connect(function()
+	Tween(aimbotPopup, 0.2, {Size = UDim2.fromOffset(0,0)})
+	task.delay(0.2, function() aimbotPopup.Visible = false end)
+end)
+
+aimbotToggle.MouseButton1Click:Connect(function() setAimbot(not Features.aimbotEnabled) end)
+
+--// =========================================================
+--// WALLSHOT ENGINE
+--// =========================================================
+
+local wallshotSavedParts = {}
+local wallshotActivatedParts = {}
+local wallshotGameFolder = Workspace:FindFirstChild("Game")
+local wallshotConnections = {}
+local wallshotLastCheck = 0
+
+local function wallshotSavePart(part)
+	if not part:IsA("BasePart") or wallshotSavedParts[part] then return end
+	wallshotSavedParts[part] = {
+		CanCollide = part.CanCollide,
+		CanQuery = part.CanQuery,
+		CanTouch = part.CanTouch,
+		Transparency = part.Transparency,
+		LocalTransparencyModifier = part.LocalTransparencyModifier,
+	}
+end
+
+local function wallshotApplyPart(part)
+	if not part:IsA("BasePart") then return end
+	wallshotSavePart(part)
+	pcall(function()
+		part.CanCollide = false
+		part.CanQuery = false
+		part.CanTouch = false
+		if Features.wallshotMode == "Transparent" then
+			part.Transparency = Features.wallshotTransparency
+		else
+			local old = wallshotSavedParts[part]
+			part.Transparency = old and old.Transparency or part.Transparency
+		end
+	end)
+end
+
+local function wallshotProcessObject(object)
+	if object:IsA("BasePart") then wallshotApplyPart(object) end
+	for _, d in ipairs(object:GetDescendants()) do
+		if d:IsA("BasePart") then wallshotApplyPart(d) end
+	end
+end
+
+local function wallshotApplyAllVisuals()
+	for part, data in pairs(wallshotSavedParts) do
+		if part and part.Parent then
+			pcall(function()
+				if Features.wallshotMode == "Transparent" then
+					part.Transparency = Features.wallshotTransparency
+				else
+					part.Transparency = data.Transparency
+					part.LocalTransparencyModifier = data.LocalTransparencyModifier
+				end
+			end)
+		end
+	end
+end
+
+local function wallshotActivatePart(part)
+	if not part or not wallshotSavedParts[part] or wallshotActivatedParts[part] then return end
+	wallshotActivatedParts[part] = true
+	pcall(function()
+		part.CanCollide = true
+		part.CanQuery = false
+		part.CanTouch = false
+		if Features.wallshotMode == "Transparent" then part.Transparency = Features.wallshotTransparency end
+	end)
+end
+
+local function wallshotFindPartsUnderPlayer()
+	local result = {}
+	local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+	if not root or not root.Parent or not wallshotGameFolder then return result end
+
+	for part in pairs(wallshotSavedParts) do
+		if part and part.Parent then pcall(function() part.CanQuery = true end) end
+	end
+
+	local overlapParams = OverlapParams.new()
+	overlapParams.FilterType = Enum.RaycastFilterType.Include
+	overlapParams.FilterDescendantsInstances = {wallshotGameFolder}
+	local parts = Workspace:GetPartBoundsInBox(root.CFrame + Vector3.new(0, -2.5, 0), Vector3.new(5,4,5), overlapParams)
+	for _, part in ipairs(parts) do
+		if wallshotSavedParts[part] then
+			local topY = part.Position.Y + part.Size.Y / 2
+			if topY <= root.Position.Y + 1.5 then result[part] = true end
+		end
+	end
+
+	local rayParams = RaycastParams.new()
+	rayParams.FilterType = Enum.RaycastFilterType.Include
+	rayParams.FilterDescendantsInstances = {wallshotGameFolder}
+	rayParams.IgnoreWater = true
+	local center = root.Position
+	local offsets = {
+		Vector3.new(0,0,0), Vector3.new(1.5,0,0), Vector3.new(-1.5,0,0),
+		Vector3.new(0,0,1.5), Vector3.new(0,0,-1.5), Vector3.new(1.2,0,1.2),
+		Vector3.new(-1.2,0,1.2), Vector3.new(1.2,0,-1.2), Vector3.new(-1.2,0,-1.2)
+	}
+	for _, offset in ipairs(offsets) do
+		local ray = Workspace:Raycast(center + offset + Vector3.new(0,1,0), Vector3.new(0,-6,0), rayParams)
+		if ray and wallshotSavedParts[ray.Instance] then result[ray.Instance] = true end
+	end
+
+	for part in pairs(wallshotSavedParts) do
+		if part and part.Parent then pcall(function() part.CanQuery = false end) end
+	end
+	return result
+end
+
+function setWallshot(state)
+	Features.wallshotEnabled = state
+	if Features.wallshotEnabled then
+		wallshotGameFolder = wallshotGameFolder or Workspace:FindFirstChild("Game")
+		if wallshotGameFolder then
+			if next(wallshotSavedParts) == nil then
+				for _, object in ipairs(wallshotGameFolder:GetChildren()) do wallshotProcessObject(object) end
+			end
+			wallshotApplyAllVisuals()
+		end
+		Tween(wallshotToggle, 0.2, {BackgroundColor3 = COLORS.Accent})
+		Tween(wallshotKnob, 0.2, {Position = UDim2.fromOffset(24,3), BackgroundColor3 = Color3.new(1,1,1)})
+	else
+		Tween(wallshotToggle, 0.2, {BackgroundColor3 = COLORS.Panel2})
+		Tween(wallshotKnob, 0.2, {Position = UDim2.fromOffset(3,3), BackgroundColor3 = COLORS.SubText})
+		for part, data in pairs(wallshotSavedParts) do
+			if part and part.Parent then pcall(function()
+				part.CanCollide = data.CanCollide
+				part.CanQuery = data.CanQuery
+				part.CanTouch = data.CanTouch
+				part.Transparency = data.Transparency
+				part.LocalTransparencyModifier = data.LocalTransparencyModifier
+			end) end
+		end
+		wallshotSavedParts = {}
+		wallshotActivatedParts = {}
+	end
+end
+
+wallshotToggle.MouseButton1Click:Connect(function() setWallshot(not Features.wallshotEnabled) end)
+
+if wallshotGameFolder then
+	table.insert(wallshotConnections, wallshotGameFolder.DescendantAdded:Connect(function(object)
+		if not Features.wallshotEnabled or not object:IsA("BasePart") then return end
+		task.wait()
+		wallshotApplyPart(object)
+	end))
+end
+
+table.insert(wallshotConnections, RunService.Heartbeat:Connect(function()
+	if not Features.wallshotEnabled then return end
+	local now = os.clock()
+	if now - wallshotLastCheck < 0.03 then return end
+	wallshotLastCheck = now
+	for part in pairs(wallshotFindPartsUnderPlayer()) do wallshotActivatePart(part) end
+end))
+
+--// WALLSHOT SETTINGS POPUP
+
+wallshotPopup = New("Frame", {Name = "WallshotPopup", Parent = gui, AnchorPoint = Vector2.new(0.5,0.5), Position = UDim2.fromScale(0.5,0.5), Size = UDim2.fromOffset(0,0), BackgroundColor3 = COLORS.Panel, BorderSizePixel = 0, Visible = false, ZIndex = 80})
+Corner(wallshotPopup, 14)
+Stroke(wallshotPopup, COLORS.Border, 0.2, 1)
+New("TextLabel", {Parent = wallshotPopup, Position = UDim2.fromOffset(20,15), Size = UDim2.fromOffset(230,22), BackgroundTransparency = 1, Text = "Wallshot Settings", TextColor3 = COLORS.Text, TextSize = 15, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+wallshotClose = New("TextButton", {Parent = wallshotPopup, Position = UDim2.new(1,-38,0,12), Size = UDim2.fromOffset(24,24), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = "×", TextColor3 = COLORS.SubText, TextSize = 16, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(wallshotClose,7)
+New("TextLabel", {Parent = wallshotPopup, Position = UDim2.fromOffset(20,50), Size = UDim2.fromOffset(110,22), BackgroundTransparency = 1, Text = "Keybind", TextColor3 = COLORS.SubText, TextSize = 10, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+wallshotBindBtn = New("TextButton", {Parent = wallshotPopup, Position = UDim2.new(1,-125,0,47), Size = UDim2.fromOffset(100,28), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = keyName(Keys.wallshotKey), TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(wallshotBindBtn,6)
+wallshotDeleteBindBtn = New("TextButton", {Parent = wallshotPopup, Position = UDim2.new(1,-20,0,47), Size = UDim2.fromOffset(14,28), BackgroundColor3 = COLORS.Danger, BorderSizePixel = 0, Text = "×", TextColor3 = Color3.new(1,1,1), TextSize = 10, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(wallshotDeleteBindBtn,5)
+wallshotDeleteBindBtn.MouseButton1Click:Connect(function() Keys.wallshotKey = Enum.KeyCode.Unknown; wallshotBindBtn.Text = "None"; updateKeybindsList() end)
+wallshotBindBtn.MouseButton1Click:Connect(function() State.waitingForWallshotKey = true; wallshotBindBtn.Text = "Press key..." end)
+New("TextLabel", {Parent = wallshotPopup, Position = UDim2.fromOffset(20,88), Size = UDim2.fromOffset(110,22), BackgroundTransparency = 1, Text = "Wall mode", TextColor3 = COLORS.SubText, TextSize = 10, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+wallshotModeBtn = New("TextButton", {Parent = wallshotPopup, Position = UDim2.new(1,-125,0,85), Size = UDim2.fromOffset(100,28), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = Features.wallshotMode, TextColor3 = COLORS.Accent, TextSize = 9, Font = Enum.Font.GothamBold, AutoButtonColor = false, ZIndex = 81})
+Corner(wallshotModeBtn,6)
+wallshotModeBtn.MouseButton1Click:Connect(function()
+	Features.wallshotMode = Features.wallshotMode == "Transparent" and "No Transparency" or "Transparent"
+	wallshotModeBtn.Text = Features.wallshotMode
+	wallshotApplyAllVisuals()
+end)
+New("TextLabel", {Parent = wallshotPopup, Position = UDim2.fromOffset(20,126), Size = UDim2.fromOffset(110,22), BackgroundTransparency = 1, Text = "Transparency", TextColor3 = COLORS.SubText, TextSize = 10, Font = Enum.Font.GothamMedium, TextXAlignment = Enum.TextXAlignment.Left, ZIndex = 81})
+wallshotTransparencyBox = New("TextBox", {Parent = wallshotPopup, Position = UDim2.new(1,-125,0,123), Size = UDim2.fromOffset(100,28), BackgroundColor3 = COLORS.Panel2, BorderSizePixel = 0, Text = tostring(Features.wallshotTransparency), TextColor3 = COLORS.Text, TextSize = 10, Font = Enum.Font.GothamBold, TextXAlignment = Enum.TextXAlignment.Center, ClearTextOnFocus = false, ZIndex = 81})
+Corner(wallshotTransparencyBox,6)
+wallshotTransparencyBox.FocusLost:Connect(function()
+	local n = tonumber(wallshotTransparencyBox.Text)
+	if n then Features.wallshotTransparency = math.clamp(n,0,1) end
+	wallshotTransparencyBox.Text = tostring(Features.wallshotTransparency)
+	if Features.wallshotMode == "Transparent" then wallshotApplyAllVisuals() end
+end)
+wallshotSettingsBtn.MouseButton1Click:Connect(function()
+	if wallshotPopup.Visible then Tween(wallshotPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() wallshotPopup.Visible=false end)
+	else wallshotPopup.Visible=true; wallshotModeBtn.Text=Features.wallshotMode; wallshotTransparencyBox.Text=tostring(Features.wallshotTransparency); Tween(wallshotPopup,0.25,{Size=UDim2.fromOffset(290,185)},Enum.EasingStyle.Back) end
+end)
+wallshotClose.MouseButton1Click:Connect(function() Tween(wallshotPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() wallshotPopup.Visible=false end) end)
+
+--// =========================================================
+--// HITBOX
+--// =========================================================
+
+local hitboxSavedParts = {}
+local hitboxConnections = {}
+
+local function hitboxCreate(part, size, color)
+	if not part or not part:IsA("BasePart") then return end
+	if not hitboxSavedParts[part] then hitboxSavedParts[part] = {Size = part.Size} end
+	part.Size = size
+	local visual = part:FindFirstChild("ATEOT_VisibleHitbox")
+	if not visual then
+		visual = Instance.new("BoxHandleAdornment")
+		visual.Name = "ATEOT_VisibleHitbox"
+		visual.Adornee = part
+		visual.AlwaysOnTop = true
+		visual.ZIndex = 10
+		visual.Parent = part
+	end
+	visual.Size = size
+	visual.Color3 = color
+	visual.Transparency = Features.hitboxShowVisuals and Features.hitboxTransparency or 1
+end
+
+local function hitboxSetupCharacter(character)
+	if not Features.hitboxEnabled or not character then return end
+	local head = character:FindFirstChild("Head")
+	if Features.hitboxHeadEnabled and head then hitboxCreate(head, Features.hitboxHeadSize, Color3.fromRGB(255,60,60)) end
+	if Features.hitboxBodyEnabled then
+		local torso = character:FindFirstChild("UpperTorso") or character:FindFirstChild("Torso") or character:FindFirstChild("HumanoidRootPart")
+		if torso then hitboxCreate(torso, Features.hitboxBodySize, Color3.fromRGB(60,140,255)) end
+	end
+end
+
+local function hitboxApplyAll()
+	for _, plr in ipairs(Players:GetPlayers()) do
+		if plr.Character then hitboxSetupCharacter(plr.Character) end
+	end
+end
+
+local function hitboxRestoreAll()
+	for part, data in pairs(hitboxSavedParts) do
+		if part and part.Parent then
+			pcall(function() part.Size = data.Size end)
+			local visual = part:FindFirstChild("ATEOT_VisibleHitbox")
+			if visual then visual:Destroy() end
+		end
+	end
+	hitboxSavedParts = {}
+end
+
+function setHitbox(state)
+	Features.hitboxEnabled = state
+	if state then
+		Tween(hitboxToggle,0.2,{BackgroundColor3=COLORS.Accent})
+		Tween(hitboxKnob,0.2,{Position=UDim2.fromOffset(24,3),BackgroundColor3=Color3.new(1,1,1)})
+		hitboxApplyAll()
+	else
+		Tween(hitboxToggle,0.2,{BackgroundColor3=COLORS.Panel2})
+		Tween(hitboxKnob,0.2,{Position=UDim2.fromOffset(3,3),BackgroundColor3=COLORS.SubText})
+		hitboxRestoreAll()
+	end
+end
+
+for _, plr in ipairs(Players:GetPlayers()) do
+	hitboxConnections[plr] = plr.CharacterAdded:Connect(function(character)
+		task.wait(0.2)
+		hitboxSetupCharacter(character)
+	end)
+end
+hitboxConnections.playerAdded = Players.PlayerAdded:Connect(function(plr)
+	hitboxConnections[plr] = plr.CharacterAdded:Connect(function(character)
+		task.wait(0.2)
+		hitboxSetupCharacter(character)
+	end)
+end)
+
+hitboxRow = New("Frame", {Name="HitboxRow", Parent=playerPage, Position=UDim2.fromOffset(36,590), Size=UDim2.new(1,-72,0,50), BackgroundColor3=COLORS.Panel, BorderSizePixel=0, ZIndex=8})
+Corner(hitboxRow,10)
+Stroke(hitboxRow,COLORS.Border,0.3,1)
+New("TextLabel", {Parent=hitboxRow, Position=UDim2.fromOffset(16,7), Size=UDim2.fromOffset(250,18), BackgroundTransparency=1, Text="Hitbox", TextColor3=COLORS.Text, TextSize=13, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=9})
+New("TextLabel", {Parent=hitboxRow, Position=UDim2.fromOffset(16,26), Size=UDim2.fromOffset(330,16), BackgroundTransparency=1, Text="Increase head/body hitbox size", TextColor3=COLORS.SubText, TextSize=10, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=9})
+hitboxToggle = New("TextButton", {Parent=hitboxRow, Position=UDim2.new(1,-100,0.5,-12), Size=UDim2.fromOffset(45,24), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="", AutoButtonColor=false, ZIndex=9})
+Corner(hitboxToggle,12)
+Stroke(hitboxToggle,COLORS.Border,0.3,1)
+hitboxKnob = New("Frame", {Parent=hitboxToggle, Position=UDim2.fromOffset(3,3), Size=UDim2.fromOffset(18,18), BackgroundColor3=COLORS.SubText, BorderSizePixel=0, ZIndex=10})
+Corner(hitboxKnob,9)
+hitboxSettingsBtn = New("TextButton", {Parent=hitboxRow, Position=UDim2.new(1,-45,0.5,-14), Size=UDim2.fromOffset(28,28), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="⚙", TextColor3=COLORS.SubText, TextSize=14, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=9})
+Corner(hitboxSettingsBtn,7)
+hitboxToggle.MouseButton1Click:Connect(function() setHitbox(not Features.hitboxEnabled) end)
+
+hitboxPopup = New("Frame", {Name="HitboxPopup", Parent=gui, AnchorPoint=Vector2.new(0.5,0.5), Position=UDim2.fromScale(0.5,0.5), Size=UDim2.fromOffset(0,0), BackgroundColor3=COLORS.Panel, BorderSizePixel=0, Visible=false, ZIndex=80})
+Corner(hitboxPopup,14)
+Stroke(hitboxPopup,COLORS.Border,0.2,1)
+New("TextLabel", {Parent=hitboxPopup, Position=UDim2.fromOffset(20,15), Size=UDim2.fromOffset(180,22), BackgroundTransparency=1, Text="Hitbox Settings", TextColor3=COLORS.Text, TextSize=15, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=81})
+hitboxClose = New("TextButton", {Parent=hitboxPopup, Position=UDim2.new(1,-38,0,12), Size=UDim2.fromOffset(24,24), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="×", TextColor3=COLORS.SubText, TextSize=16, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=81})
+Corner(hitboxClose,7)
+New("TextLabel", {Parent=hitboxPopup, Position=UDim2.fromOffset(20,50), Size=UDim2.fromOffset(90,20), BackgroundTransparency=1, Text="Keybind", TextColor3=COLORS.SubText, TextSize=10, Font=Enum.Font.GothamMedium, ZIndex=81})
+hitboxBindBtn = New("TextButton", {Parent=hitboxPopup, Position=UDim2.new(1,-125,0,47), Size=UDim2.fromOffset(100,28), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text=keyName(Keys.hitboxKey), TextColor3=COLORS.Text, TextSize=10, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=81})
+Corner(hitboxBindBtn,6)
+New("TextLabel", {Parent=hitboxPopup, Position=UDim2.fromOffset(20,88), Size=UDim2.fromOffset(120,20), BackgroundTransparency=1, Text="Head", TextColor3=COLORS.SubText, TextSize=10, Font=Enum.Font.GothamMedium, ZIndex=81})
+hitboxHeadBtn = New("TextButton", {Parent=hitboxPopup, Position=UDim2.new(1,-120,0,85), Size=UDim2.fromOffset(100,26), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="ON", TextColor3=COLORS.Text, TextSize=10, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=81})
+Corner(hitboxHeadBtn,6)
+New("TextLabel", {Parent=hitboxPopup, Position=UDim2.fromOffset(20,123), Size=UDim2.fromOffset(120,20), BackgroundTransparency=1, Text="Body", TextColor3=COLORS.SubText, TextSize=10, Font=Enum.Font.GothamMedium, ZIndex=81})
+hitboxBodyBtn = New("TextButton", {Parent=hitboxPopup, Position=UDim2.new(1,-120,0,120), Size=UDim2.fromOffset(100,26), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="ON", TextColor3=COLORS.Text, TextSize=10, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=81})
+Corner(hitboxBodyBtn,6)
+New("TextLabel", {Parent=hitboxPopup, Position=UDim2.fromOffset(20,158), Size=UDim2.fromOffset(120,20), BackgroundTransparency=1, Text="Visual", TextColor3=COLORS.SubText, TextSize=10, Font=Enum.Font.GothamMedium, ZIndex=81})
+hitboxVisualBtn = New("TextButton", {Parent=hitboxPopup, Position=UDim2.new(1,-120,0,155), Size=UDim2.fromOffset(100,26), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text="ON", TextColor3=COLORS.Text, TextSize=10, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=81})
+Corner(hitboxVisualBtn,6)
+local function updateHitboxSettingsUI()
+	hitboxHeadBtn.Text=Features.hitboxHeadEnabled and "ON" or "OFF"
+	hitboxBodyBtn.Text=Features.hitboxBodyEnabled and "ON" or "OFF"
+	hitboxVisualBtn.Text=Features.hitboxShowVisuals and "ON" or "OFF"
+end
+hitboxBindBtn.MouseButton1Click:Connect(function() State.waitingForHitboxKey=true; hitboxBindBtn.Text="Press key..." end)
+hitboxHeadBtn.MouseButton1Click:Connect(function() Features.hitboxHeadEnabled=not Features.hitboxHeadEnabled; updateHitboxSettingsUI(); if Features.hitboxEnabled then hitboxRestoreAll(); hitboxApplyAll() end end)
+hitboxBodyBtn.MouseButton1Click:Connect(function() Features.hitboxBodyEnabled=not Features.hitboxBodyEnabled; updateHitboxSettingsUI(); if Features.hitboxEnabled then hitboxRestoreAll(); hitboxApplyAll() end end)
+hitboxVisualBtn.MouseButton1Click:Connect(function() Features.hitboxShowVisuals=not Features.hitboxShowVisuals; updateHitboxSettingsUI(); for part in pairs(hitboxSavedParts) do local v=part:FindFirstChild("ATEOT_VisibleHitbox"); if v then v.Transparency=Features.hitboxShowVisuals and Features.hitboxTransparency or 1 end end end)
+hitboxSettingsBtn.MouseButton1Click:Connect(function()
+	if hitboxPopup.Visible then Tween(hitboxPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() hitboxPopup.Visible=false end) else updateHitboxSettingsUI(); hitboxPopup.Visible=true; Tween(hitboxPopup,0.25,{Size=UDim2.fromOffset(290,205)},Enum.EasingStyle.Back) end
+end)
+hitboxClose.MouseButton1Click:Connect(function() Tween(hitboxPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() hitboxPopup.Visible=false end) end)
+
+--// =========================================================
+--// INVISIBLE / FREECAM
+--// =========================================================
+
+local freecamEnabled = false
+local freecamSavedCharacterCFrame = nil
+local freecamCameraCFrame = nil
+local freecamConnection = nil
+local freecamInputBeganConnection = nil
+local freecamInputEndedConnection = nil
+local freecamYaw = 0
+local freecamPitch = 0
+local freecamKeys = {W=false,A=false,S=false,D=false,Q=false,E=false,Shift=false}
+
+local function freecamGetCharacter()
+	local character = player.Character or player.CharacterAdded:Wait()
+	local root = character:WaitForChild("HumanoidRootPart")
+	local humanoid = character:WaitForChild("Humanoid")
+	return character, root, humanoid
+end
+local function freecamKeyDown(input)
+	if input.KeyCode == Enum.KeyCode.W then freecamKeys.W=true elseif input.KeyCode == Enum.KeyCode.A then freecamKeys.A=true elseif input.KeyCode == Enum.KeyCode.S then freecamKeys.S=true elseif input.KeyCode == Enum.KeyCode.D then freecamKeys.D=true elseif input.KeyCode == Enum.KeyCode.Q then freecamKeys.Q=true elseif input.KeyCode == Enum.KeyCode.E then freecamKeys.E=true elseif input.KeyCode == Enum.KeyCode.LeftShift then freecamKeys.Shift=true end
+end
+local function freecamKeyUp(input)
+	if input.KeyCode == Enum.KeyCode.W then freecamKeys.W=false elseif input.KeyCode == Enum.KeyCode.A then freecamKeys.A=false elseif input.KeyCode == Enum.KeyCode.S then freecamKeys.S=false elseif input.KeyCode == Enum.KeyCode.D then freecamKeys.D=false elseif input.KeyCode == Enum.KeyCode.Q then freecamKeys.Q=false elseif input.KeyCode == Enum.KeyCode.E then freecamKeys.E=false elseif input.KeyCode == Enum.KeyCode.LeftShift then freecamKeys.Shift=false end
+end
+local function enableFreecam()
+	if freecamEnabled then return end
+	local character, root, humanoid = freecamGetCharacter()
+	freecamEnabled=true
+	Features.freecamEnabled=true
+	freecamSavedCharacterCFrame=root.CFrame
+	freecamCameraCFrame=camera.CFrame
+	local look=freecamCameraCFrame.LookVector
+	freecamYaw=math.atan2(-look.X,-look.Z)
+	freecamPitch=math.asin(math.clamp(look.Y,-1,1))
+	humanoid.AutoRotate=false
+	root.CFrame=freecamSavedCharacterCFrame*CFrame.new(0,-Features.freecamDownDistance,0)
+	root.Anchored=true
+	root.AssemblyLinearVelocity=Vector3.zero
+	root.AssemblyAngularVelocity=Vector3.zero
+	camera.CameraType=Enum.CameraType.Scriptable
+	camera.CFrame=freecamCameraCFrame
+	UserInputService.MouseBehavior=Enum.MouseBehavior.LockCenter
+	UserInputService.MouseIconEnabled=false
+	freecamConnection=RunService.RenderStepped:Connect(function(deltaTime)
+		if not freecamEnabled then return end
+		if not root or not root.Parent then return end
+		local mouseDelta=UserInputService:GetMouseDelta()
+		freecamYaw-=mouseDelta.X*0.0025
+		freecamPitch=math.clamp(freecamPitch-mouseDelta.Y*0.0025,math.rad(-89),math.rad(89))
+		local rotation=CFrame.Angles(0,freecamYaw,0)*CFrame.Angles(freecamPitch,0,0)
+		local move=Vector3.zero
+		if freecamKeys.W then move+=Vector3.new(0,0,-1) end
+		if freecamKeys.S then move+=Vector3.new(0,0,1) end
+		if freecamKeys.A then move+=Vector3.new(-1,0,0) end
+		if freecamKeys.D then move+=Vector3.new(1,0,0) end
+		if freecamKeys.E then move+=Vector3.new(0,1,0) end
+		if freecamKeys.Q then move+=Vector3.new(0,-1,0) end
+		if move.Magnitude>0 then local speed=freecamKeys.Shift and Features.freecamFastSpeed or Features.freecamSpeed; freecamCameraCFrame+=rotation:VectorToWorldSpace(move.Unit)*speed*60*deltaTime end
+		camera.CFrame=CFrame.new(freecamCameraCFrame.Position)*rotation
+		root.CFrame=freecamSavedCharacterCFrame*CFrame.new(0,-Features.freecamDownDistance,0)
+		root.AssemblyLinearVelocity=Vector3.zero
+		root.AssemblyAngularVelocity=Vector3.zero
+	end)
+	freecamInputBeganConnection=UserInputService.InputBegan:Connect(freecamKeyDown)
+	freecamInputEndedConnection=UserInputService.InputEnded:Connect(freecamKeyUp)
+end
+local function disableFreecam()
+	if not freecamEnabled then return end
+	local currentCameraCFrame=camera.CFrame
+	local currentCameraPosition=currentCameraCFrame.Position
+	local currentCameraLook=currentCameraCFrame.LookVector
+	freecamEnabled=false
+	Features.freecamEnabled=false
+	if freecamConnection then freecamConnection:Disconnect(); freecamConnection=nil end
+	if freecamInputBeganConnection then freecamInputBeganConnection:Disconnect(); freecamInputBeganConnection=nil end
+	if freecamInputEndedConnection then freecamInputEndedConnection:Disconnect(); freecamInputEndedConnection=nil end
+	local character=player.Character
+	local root=character and character:FindFirstChild("HumanoidRootPart")
+	local humanoid=character and character:FindFirstChildOfClass("Humanoid")
+	if root then root.Anchored=false; root.CFrame=CFrame.lookAt(currentCameraPosition+Vector3.new(0,2,0),currentCameraPosition+Vector3.new(0,2,0)+currentCameraLook); root.AssemblyLinearVelocity=Vector3.zero; root.AssemblyAngularVelocity=Vector3.zero end
+	if humanoid then humanoid.AutoRotate=true end
+	camera.CameraType=Enum.CameraType.Custom
+	if humanoid then camera.CameraSubject=humanoid end
+	UserInputService.MouseBehavior=Enum.MouseBehavior.Default
+	UserInputService.MouseIconEnabled=true
+	freecamSavedCharacterCFrame=nil
+	freecamCameraCFrame=nil
+	for k in pairs(freecamKeys) do freecamKeys[k]=false end
+end
+function setFreecam(state)
+	Features.freecamEnabled=state
+	if state then
+		if not freecamEnabled then enableFreecam() end
+		Tween(freecamToggle,0.2,{BackgroundColor3=COLORS.Accent})
+		Tween(freecamKnob,0.2,{Position=UDim2.fromOffset(24,3),BackgroundColor3=Color3.new(1,1,1)})
+	else
+		disableFreecam()
+		Tween(freecamToggle,0.2,{BackgroundColor3=COLORS.Panel2})
+		Tween(freecamKnob,0.2,{Position=UDim2.fromOffset(3,3),BackgroundColor3=COLORS.SubText})
+	end
+end
+
+freecamRow=New("Frame",{Name="FreecamRow",Parent=playerPage,Position=UDim2.fromOffset(36,650),Size=UDim2.new(1,-72,0,50),BackgroundColor3=COLORS.Panel,BorderSizePixel=0,ZIndex=8})
+Corner(freecamRow,10)
+Stroke(freecamRow,COLORS.Border,0.3,1)
+New("TextLabel",{Parent=freecamRow,Position=UDim2.fromOffset(16,7),Size=UDim2.fromOffset(250,18),BackgroundTransparency=1,Text="Invisible / Freecam",TextColor3=COLORS.Text,TextSize=13,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=9})
+New("TextLabel",{Parent=freecamRow,Position=UDim2.fromOffset(16,26),Size=UDim2.fromOffset(340,16),BackgroundTransparency=1,Text="Hide character 100 studs below + free camera",TextColor3=COLORS.SubText,TextSize=10,Font=Enum.Font.GothamMedium,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=9})
+freecamToggle=New("TextButton",{Parent=freecamRow,Position=UDim2.new(1,-100,0.5,-12),Size=UDim2.fromOffset(45,24),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text="",AutoButtonColor=false,ZIndex=9})
+Corner(freecamToggle,12)
+Stroke(freecamToggle,COLORS.Border,0.3,1)
+freecamKnob=New("Frame",{Parent=freecamToggle,Position=UDim2.fromOffset(3,3),Size=UDim2.fromOffset(18,18),BackgroundColor3=COLORS.SubText,BorderSizePixel=0,ZIndex=10})
+Corner(freecamKnob,9)
+freecamSettingsBtn=New("TextButton",{Parent=freecamRow,Position=UDim2.new(1,-45,0.5,-14),Size=UDim2.fromOffset(28,28),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text="⚙",TextColor3=COLORS.SubText,TextSize=14,Font=Enum.Font.GothamBold,AutoButtonColor=false,ZIndex=9})
+Corner(freecamSettingsBtn,7)
+freecamToggle.MouseButton1Click:Connect(function() setFreecam(not Features.freecamEnabled) end)
+
+freecamPopup=New("Frame",{Name="FreecamPopup",Parent=gui,AnchorPoint=Vector2.new(0.5,0.5),Position=UDim2.fromScale(0.5,0.5),Size=UDim2.fromOffset(0,0),BackgroundColor3=COLORS.Panel,BorderSizePixel=0,Visible=false,ZIndex=80})
+Corner(freecamPopup,14)
+Stroke(freecamPopup,COLORS.Border,0.2,1)
+New("TextLabel",{Parent=freecamPopup,Position=UDim2.fromOffset(20,15),Size=UDim2.fromOffset(200,22),BackgroundTransparency=1,Text="Freecam Settings",TextColor3=COLORS.Text,TextSize=15,Font=Enum.Font.GothamBold,TextXAlignment=Enum.TextXAlignment.Left,ZIndex=81})
+freecamClose=New("TextButton",{Parent=freecamPopup,Position=UDim2.new(1,-38,0,12),Size=UDim2.fromOffset(24,24),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text="×",TextColor3=COLORS.SubText,TextSize=16,Font=Enum.Font.GothamBold,AutoButtonColor=false,ZIndex=81})
+Corner(freecamClose,7)
+New("TextLabel",{Parent=freecamPopup,Position=UDim2.fromOffset(20,50),Size=UDim2.fromOffset(90,20),BackgroundTransparency=1,Text="Keybind",TextColor3=COLORS.SubText,TextSize=10,Font=Enum.Font.GothamMedium,ZIndex=81})
+freecamBindBtn=New("TextButton",{Parent=freecamPopup,Position=UDim2.new(1,-125,0,47),Size=UDim2.fromOffset(100,28),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text=keyName(Keys.freecamKey),TextColor3=COLORS.Text,TextSize=10,Font=Enum.Font.GothamBold,AutoButtonColor=false,ZIndex=81})
+Corner(freecamBindBtn,6)
+New("TextLabel",{Parent=freecamPopup,Position=UDim2.fromOffset(20,90),Size=UDim2.fromOffset(120,20),BackgroundTransparency=1,Text="Down distance",TextColor3=COLORS.SubText,TextSize=10,Font=Enum.Font.GothamMedium,ZIndex=81})
+freecamDistanceBox=New("TextBox",{Parent=freecamPopup,Position=UDim2.new(1,-120,0,87),Size=UDim2.fromOffset(100,26),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text=tostring(Features.freecamDownDistance),TextColor3=COLORS.Text,TextSize=10,Font=Enum.Font.GothamBold,ClearTextOnFocus=false,ZIndex=81})
+Corner(freecamDistanceBox,6)
+New("TextLabel",{Parent=freecamPopup,Position=UDim2.fromOffset(20,125),Size=UDim2.fromOffset(120,20),BackgroundTransparency=1,Text="Normal speed",TextColor3=COLORS.SubText,TextSize=10,Font=Enum.Font.GothamMedium,ZIndex=81})
+freecamSpeedBox=New("TextBox",{Parent=freecamPopup,Position=UDim2.new(1,-120,0,122),Size=UDim2.fromOffset(100,26),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text=tostring(Features.freecamSpeed),TextColor3=COLORS.Text,TextSize=10,Font=Enum.Font.GothamBold,ClearTextOnFocus=false,ZIndex=81})
+Corner(freecamSpeedBox,6)
+New("TextLabel",{Parent=freecamPopup,Position=UDim2.fromOffset(20,160),Size=UDim2.fromOffset(120,20),BackgroundTransparency=1,Text="Fast speed",TextColor3=COLORS.SubText,TextSize=10,Font=Enum.Font.GothamMedium,ZIndex=81})
+freecamFastBox=New("TextBox",{Parent=freecamPopup,Position=UDim2.new(1,-120,0,157),Size=UDim2.fromOffset(100,26),BackgroundColor3=COLORS.Panel2,BorderSizePixel=0,Text=tostring(Features.freecamFastSpeed),TextColor3=COLORS.Text,TextSize=10,Font=Enum.Font.GothamBold,ClearTextOnFocus=false,ZIndex=81})
+Corner(freecamFastBox,6)
+freecamBindBtn.MouseButton1Click:Connect(function() State.waitingForFreecamKey=true; freecamBindBtn.Text="Press key..." end)
+local function freecamApplyBoxes()
+	Features.freecamDownDistance=math.clamp(tonumber(freecamDistanceBox.Text) or Features.freecamDownDistance,10,1000)
+	Features.freecamSpeed=math.max(0.1,tonumber(freecamSpeedBox.Text) or Features.freecamSpeed)
+	Features.freecamFastSpeed=math.max(0.1,tonumber(freecamFastBox.Text) or Features.freecamFastSpeed)
+	freecamDistanceBox.Text=tostring(Features.freecamDownDistance); freecamSpeedBox.Text=tostring(Features.freecamSpeed); freecamFastBox.Text=tostring(Features.freecamFastSpeed)
+end
+freecamDistanceBox.FocusLost:Connect(freecamApplyBoxes)
+freecamSpeedBox.FocusLost:Connect(freecamApplyBoxes)
+freecamFastBox.FocusLost:Connect(freecamApplyBoxes)
+freecamSettingsBtn.MouseButton1Click:Connect(function()
+	if freecamPopup.Visible then Tween(freecamPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() freecamPopup.Visible=false end) else freecamBindBtn.Text=keyName(Keys.freecamKey); freecamDistanceBox.Text=tostring(Features.freecamDownDistance); freecamSpeedBox.Text=tostring(Features.freecamSpeed); freecamFastBox.Text=tostring(Features.freecamFastSpeed); freecamPopup.Visible=true; Tween(freecamPopup,0.25,{Size=UDim2.fromOffset(290,205)},Enum.EasingStyle.Back) end
+end)
+freecamClose.MouseButton1Click:Connect(function() Tween(freecamPopup,0.2,{Size=UDim2.fromOffset(0,0)}); task.delay(0.2,function() freecamPopup.Visible=false end) end)
+
+--// =========================================================
 --// MOVE CAMERA / VIDEO TURN
 --// =========================================================
 
 cameraTurnRow = New("Frame", {
 	Name = "CameraTurnRow",
 	Parent = playerPage,
-	Position = UDim2.fromOffset(36, 410),
+	Position = UDim2.fromOffset(36, 530),
 	Size = UDim2.new(1, -72, 0, 50),
 	BackgroundColor3 = COLORS.Panel,
 	BorderSizePixel = 0,
@@ -3211,6 +4266,23 @@ makeEspOption("Past Distance (4s)", "PastDistance4s", 8)
 makeEspOption("Show Name", "ShowName", 9)
 makeEspOption("Show Held Tool", "ShowHeldTool", 10)
 makeEspOption("Offscreen Arrow", "OffscreenArrow", 11)
+local espDistanceRow = New("Frame", {
+	Parent = espScroll,
+	Size = UDim2.new(1, -8, 0, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	LayoutOrder = 12,
+	ZIndex = 7,
+})
+Corner(espDistanceRow, 8)
+New("TextLabel", {Parent = espDistanceRow, Position = UDim2.fromOffset(10,0), Size = UDim2.fromOffset(130,32), BackgroundTransparency=1, Text="Max Distance", TextColor3=COLORS.Text, TextSize=10, Font=Enum.Font.GothamMedium, TextXAlignment=Enum.TextXAlignment.Left, ZIndex=8})
+espDistanceBox = New("TextBox", {Parent=espDistanceRow, Position=UDim2.new(1,-92,0.5,-12), Size=UDim2.fromOffset(70,24), BackgroundColor3=COLORS.Background, BorderSizePixel=0, Text=tostring(espSettings.MaxDistance), TextColor3=COLORS.Accent, TextSize=10, Font=Enum.Font.GothamBold, TextXAlignment=Enum.TextXAlignment.Center, ClearTextOnFocus=false, ZIndex=8})
+Corner(espDistanceBox,6)
+espDistanceBox.FocusLost:Connect(function()
+	local n=tonumber(espDistanceBox.Text)
+	if n and n > 0 then espSettings.MaxDistance=math.clamp(n,25,10000) end
+	espDistanceBox.Text=tostring(espSettings.MaxDistance)
+end)
 
 --// =========================================================
 --// VISUAL PAGE - ESP ROW
@@ -3428,7 +4500,26 @@ function applySkyColor(color)
 	end
 end
 
+local lightingSnapshot = nil
+local function saveLightingSnapshot()
+	if lightingSnapshot then return end
+	lightingSnapshot={props={},children={}}
+	local props={"Ambient","OutdoorAmbient","FogColor","FogStart","FogEnd","Brightness","ClockTime","GeographicLatitude","ExposureCompensation","EnvironmentDiffuseScale","EnvironmentSpecularScale","ColorShift_Bottom","ColorShift_Top","GlobalShadows","Technology"}
+	for _,name in ipairs(props) do local ok,value=pcall(function() return Lighting[name] end); if ok then lightingSnapshot.props[name]=value end end
+	for _,child in ipairs(Lighting:GetChildren()) do local ok,clone=pcall(function() return child:Clone() end); if ok and clone then table.insert(lightingSnapshot.children,clone) end end
+end
+local function restoreLightingSnapshot()
+	if not lightingSnapshot then return end
+	if skyConnection then skyConnection:Disconnect(); skyConnection=nil end
+	for _,child in ipairs(Lighting:GetChildren()) do pcall(function() child:Destroy() end) end
+	for _,child in ipairs(lightingSnapshot.children) do pcall(function() local clone=child:Clone(); clone.Parent=Lighting end) end
+	for name,value in pairs(lightingSnapshot.props) do pcall(function() Lighting[name]=value end) end
+	skyAtmosphere=nil
+	lightingSnapshot=nil
+end
+
 function startSkyMode()
+	saveLightingSnapshot()
 	for _, v in pairs(Lighting:GetChildren()) do
 		if v:IsA("Sky") then
 			v:Destroy()
@@ -3459,18 +4550,7 @@ function startSkyMode()
 end
 
 function stopSkyMode()
-	if skyConnection then
-		skyConnection:Disconnect()
-		skyConnection = nil
-	end
-	Lighting.OutdoorAmbient = Color3.fromRGB(0, 0, 0)
-	Lighting.Ambient = Color3.fromRGB(0, 0, 0)
-	Lighting.FogColor = Color3.fromRGB(0, 0, 0)
-	Lighting.FogStart = 0
-	Lighting.FogEnd = 100000
-	if skyAtmosphere then
-		skyAtmosphere.Color = Color3.fromRGB(0, 0, 0)
-	end
+	if lightingSnapshot then restoreLightingSnapshot() elseif skyConnection then skyConnection:Disconnect(); skyConnection=nil end
 end
 
 skyPopup = New("Frame", {
@@ -3949,7 +5029,11 @@ RunService.RenderStepped:Connect(function()
 		local root = char and char:FindFirstChild("HumanoidRootPart")
 
 		if Features.espEnabled and char and hum and root and hum.Health > 0 then
+			local localRoot = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+			local worldDistance = localRoot and (localRoot.Position - root.Position).Magnitude or math.huge
+			local withinDistance = worldDistance <= (tonumber(espSettings.MaxDistance) or 500)
 			local rootPos, onScreen = camera:WorldToViewportPoint(root.Position)
+			if not withinDistance then onScreen = false end
 			if onScreen then
 				local head = char:FindFirstChild("Head")
 				local headPos = head and camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0)) or rootPos
@@ -4191,20 +5275,6 @@ rebindButton.MouseButton1Click:Connect(function()
 	rebindButton.Text = "Press a key..."
 end)
 
--- Keybind Overlay Toggle
-New("TextLabel", {
-	Parent = settingsPopup,
-	Position = UDim2.fromOffset(25, 125),
-	Size = UDim2.fromOffset(170, 20),
-	BackgroundTransparency = 1,
-	Text = "Show keybinds overlay",
-	TextColor3 = COLORS.Text,
-	TextSize = 12,
-	Font = Enum.Font.GothamBold,
-	TextXAlignment = Enum.TextXAlignment.Left,
-	ZIndex = 52,
-})
-
 toggleKbOverlayBtn = New("TextButton", {
 	Parent = settingsPopup,
 	Position = UDim2.new(1, -155, 0, 120),
@@ -4226,6 +5296,55 @@ toggleKbOverlayBtn.MouseButton1Click:Connect(function()
 	toggleKbOverlayBtn.Text = State.keybindsOverlayVisible and "ON" or "OFF"
 	toggleKbOverlayBtn.TextColor3 = State.keybindsOverlayVisible and COLORS.Text or COLORS.SubText
 end)
+
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 435),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Show enabled features",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+
+activeFeaturesToggleBtn = New("TextButton", {
+	Parent = settingsPopup,
+	Position = UDim2.new(1, -155, 0, 430),
+	Size = UDim2.fromOffset(125, 32),
+	BackgroundColor3 = COLORS.Panel2,
+	BorderSizePixel = 0,
+	Text = State.activeFeaturesOverlayVisible and "ON" or "OFF",
+	TextColor3 = State.activeFeaturesOverlayVisible and COLORS.Text or COLORS.SubText,
+	TextSize = 11,
+	Font = Enum.Font.GothamBold,
+	AutoButtonColor = false,
+	ZIndex = 53,
+})
+Corner(activeFeaturesToggleBtn, 8)
+activeFeaturesToggleBtn.MouseButton1Click:Connect(function()
+	State.activeFeaturesOverlayVisible = not State.activeFeaturesOverlayVisible
+	activeFeaturesFrame.Visible = State.activeFeaturesOverlayVisible
+	activeFeaturesToggleBtn.Text = State.activeFeaturesOverlayVisible and "ON" or "OFF"
+	activeFeaturesToggleBtn.TextColor3 = State.activeFeaturesOverlayVisible and COLORS.Text or COLORS.SubText
+end)
+
+New("TextLabel", {
+	Parent = settingsPopup,
+	Position = UDim2.fromOffset(25, 475),
+	Size = UDim2.fromOffset(170, 20),
+	BackgroundTransparency = 1,
+	Text = "Keybinds overlay",
+	TextColor3 = COLORS.Text,
+	TextSize = 12,
+	Font = Enum.Font.GothamBold,
+	TextXAlignment = Enum.TextXAlignment.Left,
+	ZIndex = 52,
+})
+toggleKbOverlayBtn.Position = UDim2.new(1, -155, 0, 470)
+
 
 -- Theme Selector
 New("TextLabel", {
@@ -4321,6 +5440,9 @@ antiFlingBtn = New("TextButton", {
 })
 
 Corner(antiFlingBtn, 8)
+antiFlingBindBtn = New("TextButton", {Parent=settingsPopup, Position=UDim2.new(1,-220,0,255), Size=UDim2.fromOffset(55,32), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text=keyName(Keys.antiFlingKey), TextColor3=COLORS.Accent, TextSize=9, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=53})
+Corner(antiFlingBindBtn,8)
+antiFlingBindBtn.MouseButton1Click:Connect(function() State.waitingForAntiFlingKey=true; antiFlingBindBtn.Text="Press..." end)
 antiFlingBtn.MouseButton1Click:Connect(function()
 	Features.antiFlingEnabled = not Features.antiFlingEnabled
 	antiFlingBtn.Text = Features.antiFlingEnabled and "ON" or "OFF"
@@ -4361,6 +5483,9 @@ antiAFKBtn = New("TextButton", {
 })
 
 Corner(antiAFKBtn, 8)
+antiAFKBindBtn = New("TextButton", {Parent=settingsPopup, Position=UDim2.new(1,-220,0,300), Size=UDim2.fromOffset(55,32), BackgroundColor3=COLORS.Panel2, BorderSizePixel=0, Text=keyName(Keys.antiAFKKey), TextColor3=COLORS.Accent, TextSize=9, Font=Enum.Font.GothamBold, AutoButtonColor=false, ZIndex=53})
+Corner(antiAFKBindBtn,8)
+antiAFKBindBtn.MouseButton1Click:Connect(function() State.waitingForAntiAFKKey=true; antiAFKBindBtn.Text="Press..." end)
 antiAFKBtn.MouseButton1Click:Connect(function()
 	Features.antiAFKEnabled = not Features.antiAFKEnabled
 	antiAFKBtn.Text = Features.antiAFKEnabled and "ON" or "OFF"
@@ -4458,6 +5583,11 @@ configFolderLabel = New("TextLabel", {
 	TextWrapped = true,
 	ZIndex = 53,
 })
+
+-- Move config controls after they are created.
+configSaveBtn.Position = UDim2.fromOffset(25, 515)
+configLoadBtn.Position = UDim2.fromOffset(160, 515)
+configFolderLabel.Position = UDim2.fromOffset(295, 515)
 
 configNamePopup = New("Frame", {
 	Name = "ConfigNamePopup",
@@ -4686,6 +5816,16 @@ function refreshConfigList()
 				setBhop(Features.bhopEnabled)
 				setSky(Features.skyEnabled)
 				setStretch(Features.stretchEnabled)
+				setAimbot(Features.aimbotEnabled)
+				setWallshot(Features.wallshotEnabled)
+				setHitbox(Features.hitboxEnabled)
+				if Features.freecamEnabled then setFreecam(true) else setFreecam(false) end
+				if aimbotFOVBox then aimbotFOVBox.Text = tostring(Features.aimbotFOV) end
+				if aimbotSmoothBox then aimbotSmoothBox.Text = tostring(Features.aimbotSmoothness) end
+				if aimbotTrackBtn then aimbotTrackBtn.Text = Features.aimbotTrackPart end
+				if wallshotModeBtn then wallshotModeBtn.Text = Features.wallshotMode end
+				if wallshotTransparencyBox then wallshotTransparencyBox.Text = tostring(Features.wallshotTransparency) end
+				if toggleAimbotFOVVisual then toggleAimbotFOVVisual() end
 				toggleRainbowCursor(Features.rainbowCursorEnabled)
 				loadButton.Text = Features.openOnLoad and "ON" or "OFF"
 				loadButton.TextColor3 = Features.openOnLoad and COLORS.Text or COLORS.SubText
@@ -4696,8 +5836,17 @@ function refreshConfigList()
 				rainbowCursorBtn.Text = Features.rainbowCursorEnabled and "ON" or "OFF"
 				rainbowCursorBtn.TextColor3 = Features.rainbowCursorEnabled and COLORS.Text or COLORS.SubText
 				cameraTurnBindBtn.Text = keyName(Keys.cameraTurnKey)
-				rebindButton.Text = keyName(Keys.openKey)
+				if antiFlingBindBtn then antiFlingBindBtn.Text = keyName(Keys.antiFlingKey) end
+				if antiAFKBindBtn then antiAFKBindBtn.Text = keyName(Keys.antiAFKKey) end
+				if hitboxBindBtn then hitboxBindBtn.Text = keyName(Keys.hitboxKey) end
+				if freecamBindBtn then freecamBindBtn.Text = keyName(Keys.freecamKey) end
+				if rebindButton then rebindButton.Text = keyName(Keys.openKey) end
+				keybindsFrame.Visible = State.keybindsOverlayVisible
+				activeFeaturesFrame.Visible = State.activeFeaturesOverlayVisible
+				if toggleKbOverlayBtn then toggleKbOverlayBtn.Text = State.keybindsOverlayVisible and "ON" or "OFF"; toggleKbOverlayBtn.TextColor3 = State.keybindsOverlayVisible and COLORS.Text or COLORS.SubText end
+				if activeFeaturesToggleBtn then activeFeaturesToggleBtn.Text = State.activeFeaturesOverlayVisible and "ON" or "OFF"; activeFeaturesToggleBtn.TextColor3 = State.activeFeaturesOverlayVisible and COLORS.Text or COLORS.SubText end
 				updateKeybindsList()
+				updateActiveFeaturesList()
 
 				if currentThemeName and THEMES[currentThemeName] then
 					applyTheme(THEMES[currentThemeName])
@@ -5066,6 +6215,15 @@ RunService.RenderStepped:Connect(function()
 	end
 end)
 
+local activeFeaturesRefreshClock = 0
+RunService.Heartbeat:Connect(function(dt)
+	activeFeaturesRefreshClock += dt
+	if activeFeaturesRefreshClock >= 0.25 then
+		activeFeaturesRefreshClock = 0
+		updateActiveFeaturesList()
+	end
+end)
+
 --// =========================================================
 --// INPUT HANDLER
 --// =========================================================
@@ -5219,6 +6377,46 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 	end
 
+	if State.waitingForAntiFlingKey then
+		if input.KeyCode == Enum.KeyCode.Escape then State.waitingForAntiFlingKey=false; antiFlingBindBtn.Text=keyName(Keys.antiFlingKey); return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then Keys.antiFlingKey=input.KeyCode; State.waitingForAntiFlingKey=false; antiFlingBindBtn.Text=keyName(Keys.antiFlingKey); updateKeybindsList(); return end
+	end
+
+	if State.waitingForAntiAFKKey then
+		if input.KeyCode == Enum.KeyCode.Escape then State.waitingForAntiAFKKey=false; antiAFKBindBtn.Text=keyName(Keys.antiAFKKey); return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then Keys.antiAFKKey=input.KeyCode; State.waitingForAntiAFKKey=false; antiAFKBindBtn.Text=keyName(Keys.antiAFKKey); updateKeybindsList(); return end
+	end
+
+	if State.waitingForAimbotKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForAimbotKey = false
+			aimbotBindBtn.Text = keyName(Keys.aimbotKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.aimbotKey = input.KeyCode
+			State.waitingForAimbotKey = false
+			aimbotBindBtn.Text = keyName(Keys.aimbotKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
+	if State.waitingForWallshotKey then
+		if input.KeyCode == Enum.KeyCode.Escape then
+			State.waitingForWallshotKey = false
+			wallshotBindBtn.Text = keyName(Keys.wallshotKey)
+			return
+		end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then
+			Keys.wallshotKey = input.KeyCode
+			State.waitingForWallshotKey = false
+			wallshotBindBtn.Text = keyName(Keys.wallshotKey)
+			updateKeybindsList()
+			return
+		end
+	end
+
 	if State.waitingForCameraTurnKey then
 		if input.KeyCode == Enum.KeyCode.Escape then
 			State.waitingForCameraTurnKey = false
@@ -5234,6 +6432,15 @@ UserInputService.InputBegan:Connect(function(input, processed)
 		end
 	end
 
+	if State.waitingForHitboxKey then
+		if input.KeyCode == Enum.KeyCode.Escape then State.waitingForHitboxKey=false; hitboxBindBtn.Text=keyName(Keys.hitboxKey); return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then Keys.hitboxKey=input.KeyCode; State.waitingForHitboxKey=false; hitboxBindBtn.Text=keyName(Keys.hitboxKey); updateKeybindsList(); return end
+	end
+	if State.waitingForFreecamKey then
+		if input.KeyCode == Enum.KeyCode.Escape then State.waitingForFreecamKey=false; freecamBindBtn.Text=keyName(Keys.freecamKey); return end
+		if input.KeyCode ~= Enum.KeyCode.Unknown then Keys.freecamKey=input.KeyCode; State.waitingForFreecamKey=false; freecamBindBtn.Text=keyName(Keys.freecamKey); updateKeybindsList(); return end
+	end
+
 	if input.KeyCode == Keys.openKey then toggleMenu() end
 	if Keys.triggerKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.triggerKey then setTriggerbot(not Features.triggerbotEnabled) end
 	if Keys.unlockCursorKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.unlockCursorKey then setCursorUnlock(not Features.cursorUnlocked) end
@@ -5243,6 +6450,22 @@ UserInputService.InputBegan:Connect(function(input, processed)
 	if Keys.bhopKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.bhopKey then setBhop(not Features.bhopEnabled) end
 	if Keys.skyKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.skyKey then setSky(not Features.skyEnabled) end
 	if Keys.stretchKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.stretchKey then setStretch(not Features.stretchEnabled) end
+	if Keys.hitboxKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.hitboxKey then setHitbox(not Features.hitboxEnabled) end
+	if Keys.freecamKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.freecamKey then setFreecam(not Features.freecamEnabled) end
+	if Keys.antiFlingKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.antiFlingKey then
+		Features.antiFlingEnabled = not Features.antiFlingEnabled
+		antiFlingBtn.Text = Features.antiFlingEnabled and "ON" or "OFF"
+		antiFlingBtn.TextColor3 = Features.antiFlingEnabled and COLORS.Text or COLORS.SubText
+		if Features.antiFlingEnabled then startAntiFling() else stopAntiFling() end
+	end
+	if Keys.antiAFKKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.antiAFKKey then
+		Features.antiAFKEnabled = not Features.antiAFKEnabled
+		antiAFKBtn.Text = Features.antiAFKEnabled and "ON" or "OFF"
+		antiAFKBtn.TextColor3 = Features.antiAFKEnabled and COLORS.Text or COLORS.SubText
+		if Features.antiAFKEnabled then startAntiAFK() else stopAntiAFK() end
+	end
+	if Keys.aimbotKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.aimbotKey then setAimbot(not Features.aimbotEnabled) end
+	if Keys.wallshotKey ~= Enum.KeyCode.Unknown and input.KeyCode == Keys.wallshotKey then setWallshot(not Features.wallshotEnabled) end
 end)
 
 State.selectedButton = playerButton
@@ -5251,6 +6474,15 @@ playerIndicator = playerButton:FindFirstChild("ActiveIndicator")
 if playerIndicator then playerIndicator.BackgroundTransparency = 0 end
 playerPage.Visible = true
 updateKeybindsList()
+updateActiveFeaturesList()
+keybindsFrame.Visible = State.keybindsOverlayVisible
+activeFeaturesFrame.Visible = State.activeFeaturesOverlayVisible
+if toggleKbOverlayBtn then toggleKbOverlayBtn.Text = State.keybindsOverlayVisible and "ON" or "OFF"; toggleKbOverlayBtn.TextColor3 = State.keybindsOverlayVisible and COLORS.Text or COLORS.SubText end
+if activeFeaturesToggleBtn then activeFeaturesToggleBtn.Text = State.activeFeaturesOverlayVisible and "ON" or "OFF"; activeFeaturesToggleBtn.TextColor3 = State.activeFeaturesOverlayVisible and COLORS.Text or COLORS.SubText end
+setAimbot(Features.aimbotEnabled)
+setWallshot(Features.wallshotEnabled)
+setHitbox(Features.hitboxEnabled)
+setFreecam(false)
 
 task.spawn(function()
 	while gui.Parent do
@@ -5261,7 +6493,35 @@ task.spawn(function()
 	end
 end)
 
+--// =========================================================
+--// RESPAWN PERSISTENCE
+--// =========================================================
+
+local respawnPersistenceConnection = player.CharacterAdded:Connect(function(character)
+	task.wait(0.25)
+	if Features.hitboxEnabled then hitboxSetupCharacter(character) end
+	if Features.freecamEnabled then
+		freecamEnabled=false
+		if freecamConnection then freecamConnection:Disconnect(); freecamConnection=nil end
+		if freecamInputBeganConnection then freecamInputBeganConnection:Disconnect(); freecamInputBeganConnection=nil end
+		if freecamInputEndedConnection then freecamInputEndedConnection:Disconnect(); freecamInputEndedConnection=nil end
+		camera=Workspace.CurrentCamera
+		task.wait(0.4)
+		if Features.freecamEnabled then pcall(function() enableFreecam() end) end
+	end
+	if Features.noclipEnabled then pcall(function() setNoclip(true) end) end
+	if Features.antiFlingEnabled then pcall(function() stopAntiFling(); startAntiFling() end) end
+end)
+
 function unloadUI()
+	setAimbot(false)
+	setWallshot(false)
+	setHitbox(false)
+	setFreecam(false)
+	for _, connection in pairs(hitboxConnections) do pcall(function() connection:Disconnect() end) end
+	hitboxConnections = {}
+	if respawnPersistenceConnection then pcall(function() respawnPersistenceConnection:Disconnect() end); respawnPersistenceConnection=nil end
+	for _, connection in ipairs(wallshotConnections) do pcall(function() connection:Disconnect() end) end
 	stopSkyMode()
 	stopStretch()
 	stopAntiFling()
