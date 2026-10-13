@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tuzik Hub</title>
+<style>
+:root{
+  --bg:#050506; --panel:#0d0d10; --panel2:#131318; --line:#23232b;
+  --text:#f2f2f5; --dim:#8a8a96; --acc:#9b8cff; --acc2:#5b4bff;
+  color-scheme:dark;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%}
+body{
+  background:var(--bg); color:var(--text);
+  font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  overflow:hidden; display:grid; place-items:center;
+  padding:env(safe-area-inset-top,0) 0 env(safe-area-inset-bottom,0);
+}
+/* soft moving glow in the background */
+body::before{
+  content:"";position:fixed;inset:-20%;
+  background:
+    radial-gradient(40% 40% at 30% 30%,rgba(91,75,255,.18),transparent 70%),
+    radial-gradient(35% 35% at 75% 70%,rgba(155,140,255,.12),transparent 70%);
+  animation:drift 14s ease-in-out infinite alternate;
+}
+@keyframes drift{to{transform:translate(4%,3%) scale(1.08)}}
+
+/* ---------- Splash ---------- */
+#splash{
+  position:relative;width:min(340px,82vw);aspect-ratio:1;
+  background:var(--panel);border:1px solid var(--line);border-radius:14px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:28px;
+  box-shadow:0 0 0 1px rgba(155,140,255,.06),0 30px 80px rgba(0,0,0,.8),0 0 60px rgba(91,75,255,.15);
+  animation:pop .7s cubic-bezier(.2,1.3,.4,1) both;
+}
+@keyframes pop{from{opacity:0;transform:scale(.6) rotate(-4deg)}to{opacity:1;transform:none}}
+#splash h1{font-size:clamp(22px,6vw,28px);font-weight:600;letter-spacing:.5px;line-height:1.3}
+#splash h1 span{display:block;font-size:.55em;font-weight:400;color:var(--dim);margin-top:8px;letter-spacing:2px}
+#splash .name{
+  background:linear-gradient(90deg,#fff,var(--acc),#fff);background-size:200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 2.4s linear infinite;
+}
+@keyframes shine{to{background-position:-200% 0}}
+.bar{position:absolute;left:28px;right:28px;bottom:28px;height:6px;border-radius:6px;background:var(--panel2);overflow:hidden}
+.bar i{display:block;height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--acc2),var(--acc));box-shadow:0 0 12px var(--acc)}
+.pct{position:absolute;bottom:42px;right:28px;font-size:12px;color:var(--dim);font-variant-numeric:tabular-nums}
+#splash.out{animation:away .55s cubic-bezier(.6,0,.9,.4) forwards}
+@keyframes away{to{opacity:0;transform:scale(1.25);filter:blur(10px)}}
+
+/* ---------- Menu ---------- */
+#menu{display:none;gap:14px;width:min(920px,94vw);height:min(520px,86vh)}
+#menu.show{display:flex}
+#menu.show>*{animation:slide .7s cubic-bezier(.2,.9,.3,1) both}
+#menu.show .side{animation-name:fromLeft}
+#menu.show .main{animation-name:fromRight;animation-delay:.12s}
+@keyframes fromLeft{from{opacity:0;transform:translateX(-50px)}}
+@keyframes fromRight{from{opacity:0;transform:translateX(50px) scale(.97)}}
+.side,.main{background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 30px 80px rgba(0,0,0,.7)}
+.side{width:190px;flex:none;padding:16px 12px;display:flex;flex-direction:column;gap:8px;position:relative}
+.side h2{font-size:15px;font-weight:600;padding:4px 10px 14px;color:var(--dim)}
+.side h2 b{color:var(--text)}
+.tab{
+  position:relative;z-index:1;font:inherit;font-size:15px;color:var(--dim);
+  background:none;border:0;text-align:left;padding:12px 14px;border-radius:10px;cursor:pointer;
+  transition:color .2s,transform .2s;
+}
+.tab:hover{color:var(--text);transform:translateX(4px)}
+.tab[aria-selected=true]{color:#fff}
+.tab:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.pill{
+  position:absolute;left:12px;right:12px;height:44px;border-radius:10px;
+  background:linear-gradient(90deg,rgba(91,75,255,.35),rgba(155,140,255,.12));
+  border:1px solid rgba(155,140,255,.45);
+  transition:transform .35s cubic-bezier(.3,1.4,.5,1);
+}
+.main{flex:1;padding:26px 30px;overflow:auto}
+.main h3{font-size:22px;font-weight:600;margin-bottom:4px}
+.main p.sub{color:var(--dim);font-size:14px;margin-bottom:22px}
+.page{display:none}
+.page.on{display:block}
+.page.on .row{animation:rowIn .45s cubic-bezier(.2,.9,.3,1) both}
+.page.on .row:nth-child(3){animation-delay:.06s}
+.page.on .row:nth-child(4){animation-delay:.12s}
+.page.on .row:nth-child(5){animation-delay:.18s}
+@keyframes rowIn{from{opacity:0;transform:translateY(14px)}}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:10px;background:var(--panel2);border:1px solid var(--line);border-radius:10px}
+.row span{font-size:14px}
+.sw{position:relative;width:42px;height:24px;flex:none;border-radius:24px;background:#26262e;border:0;cursor:pointer;transition:background .25s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .3s cubic-bezier(.3,1.5,.5,1)}
+.sw[aria-checked=true]{background:var(--acc2)}
+.sw[aria-checked=true]::after{transform:translateX(18px)}
+.sw:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.go{font:inherit;font-size:13px;color:#fff;background:var(--acc2);border:0;border-radius:8px;padding:8px 16px;cursor:pointer;transition:transform .15s,box-shadow .2s}
+.go:hover{box-shadow:0 0 18px rgba(91,75,255,.7)}
+.go:active{transform:scale(.94)}
+
+@media (max-width:640px){
+  #menu{flex-direction:column;height:92vh}
+  .side{width:100%;flex-direction:row;padding:10px;overflow-x:auto}
+  .side h2,.pill{display:none}
+  .tab[aria-selected=true]{background:rgba(91,75,255,.3)}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01s!important;animation-delay:0s!important;transition-duration:.01s!important}
+}
+</style>
+</head>
+<body>
+
+<div id="splash" role="status" aria-live="polite">
+  <h1><span class="name">Tuzik Hub</span> welcomes you<span>loading…</span></h1>
+  <div class="pct" id="pct">0%</div>
+  <div class="bar"><i id="fill"></i></div>
+</div>
+
+<div id="menu">
+  <nav class="side" role="tablist" aria-label="Menu">
+    <h2><b>Tuzik</b> Hub</h2>
+    <div class="pill" id="pill"></div>
+    <button class="tab" role="tab" aria-selected="true" data-p="visual">Visual</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="player">Player</button>
+    <button class="tab" role="tab" aria-selected="false" data-p="rooms">Rooms</button>
+  </nav>
+
+  <section class="main">
+    <div class="page on" id="visual">
+      <h3>Visual</h3><p class="sub">Change how the game looks.</p>
+      <div class="row"><span>Highlight players</span><button class="sw" role="switch" aria-checked="false" aria-label="Highlight players"></button></div>
+      <div class="row"><span>Show names</span><button class="sw" role="switch" aria-checked="true" aria-label="Show names"></button></div>
+      <div class="row"><span>Full brightness</span><button class="sw" role="switch" aria-checked="false" aria-label="Full brightness"></button></div>
+    </div>
+    <div class="page" id="player">
+      <h3>Player</h3><p class="sub">Tweak your own character.</p>
+      <div class="row"><span>Speed boost</span><button class="sw" role="switch" aria-checked="false" aria-label="Speed boost"></button></div>
+      <div class="row"><span>Higher jump</span><button class="sw" role="switch" aria-checked="false" aria-label="Higher jump"></button></div>
+      <div class="row"><span>Reset character</span><button class="go">Reset</button></div>
+    </div>
+    <div class="page" id="rooms">
+      <h3>Rooms</h3><p class="sub">Move between rooms.</p>
+      <div class="row"><span>Lobby</span><button class="go">Go</button></div>
+      <div class="row"><span>Arena</span><button class="go">Go</button></div>
+      <div class="row"><span>Hideout</span><button class="go">Go</button></div>
+    </div>
+  </section>
+</div>
+
+<script>
+// ---- loading: runs to 100%, then the menu opens ----
+const fill = document.getElementById('fill'),
+      pct  = document.getElementById('pct'),
+      splash = document.getElementById('splash'),
+      menu = document.getElementById('menu');
+let p = 0;
+(function tick(){
+  p = Math.min(100, p + Math.random() * 3.2 + .6);      // uneven steps feel like real loading
+  fill.style.width = p + '%';
+  pct.textContent = Math.floor(p) + '%';
+  if (p < 100) return setTimeout(tick, 50 + Math.random() * 60);
+  setTimeout(() => {
+    splash.classList.add('out');
+    splash.addEventListener('animationend', () => {
+      splash.style.display = 'none';
+      menu.classList.add('show');
+      movePill();
+    }, { once: true });
+  }, 350);
+})();
+
+// ---- tabs ----
+const tabs = [...document.querySelectorAll('.tab')], pill = document.getElementById('pill');
+function movePill(){
+  const t = tabs.find(x => x.getAttribute('aria-selected') === 'true');
+  pill.style.top = t.offsetTop + 'px';
+  pill.style.transform = 'none';
+}
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.setAttribute('aria-selected', x === t));
+  document.querySelectorAll('.page').forEach(pg => pg.classList.toggle('on', pg.id === t.dataset.p));
+  movePill();
+}));
+addEventListener('resize', movePill);
+
+// ---- switches ----
+document.querySelectorAll('.sw').forEach(s => s.addEventListener('click', () =>
+  s.setAttribute('aria-checked', s.getAttribute('aria-checked') !== 'true')));
+</script>
+</body>
+</html>
